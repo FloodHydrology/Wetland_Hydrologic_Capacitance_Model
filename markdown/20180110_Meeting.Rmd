@@ -1,0 +1,11 @@
+---
+title: "Initial Group Meeting (1/17/2018)"
+output: html_document 
+---
+
+Below are the major points we discussed during today's meeting:
+
+1. We scheduled “workshop” in Waterloo the week of March 5-9th
+2. We will have recurring meetings every Wednesday 1:30-3:00.  [DM and NB will join every other week.]
+3. We discussed potential alternatives for defining flowpath length.***
+4. Next Steps: a) Fix known bugs (Nate), b) Establish GitHub repository (Nate & Fred)

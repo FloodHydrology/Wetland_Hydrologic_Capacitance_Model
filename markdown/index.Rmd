@@ -1,0 +1,11 @@
+---
+title: "WHC Main Page"
+output: html_document 
+---
+
+This is the WHC Model development page. As the project progresses, we will slowly add content to describe the model and its application to specific wetland systems and datasets. 
+
+###Group Meeting Notes
+[Initial Group Meeting](https://floodhydrology.github.io/Wetland_Hydrologic_Capacitance_Model/20180110_Meeting.html) -- Planning and Flowpath Length Discussion
+
+[Mid January Working Meeting](https://floodhydrology.github.io/Wetland_Hydrologic_Capacitance_Model/20180117_Meeting.html) -- GitHub and WHC Intro

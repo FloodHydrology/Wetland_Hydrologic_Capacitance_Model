@@ -1,10 +1,9 @@
 ---
-title: "WHC Development Updates"
-output: 
-  html_document 
+title: "Mid-January Working Meeting (1/17/2018)"
+output: html_document 
 ---
 
-We will use R Markdown to communicate model details with Daniel/Nandita, share meeting notes, and generally run the project.  This initial document is just to get us started.  
+The major goals of this meeting are just to get Fred/Nate acquainted with the proposed workflow, the model structure, and to develop a plan to move forward. 
 
 ### Resources for meeting (1/17/2018)
 1. SESYNC Tutorials ([click here](http://cyberhelp.sesync.org/basic-R-lesson/2017/07/18/#/slides/plot) and [here](http://cyberhelp.sesync.org/basic-R-lesson/2017/07/18/#/slides/plot))
