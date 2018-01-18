@@ -1,5 +1,5 @@
 ---
-title: "Mid-January Working Meeting (1/17/2018)"
+title: "Mid-January Working Meeting (1/18/2018)"
 output: html_document 
 ---
 
@@ -14,3 +14,11 @@ The major goals of this meeting are just to get Fred/Nate acquainted with the pr
 1. Familiarize Fred with SESYNC cyber infrastructure, GitHub, and WHC Model.
 2. Discuss steps forward
 3. Develop plan/deliverables for next week  (For example: Run initial PPR model)
+
+### Meeting Summary and Action Items (for next time):
+We walked through SESYNC cyber infrastructure and initial code.  Action items include:
+
+1. Nate needs to migrate the model to github. 
+2. Once Nate completes (1), Fred will demo the model. 
+3. In an effort to use time most efficiently, we won’t meet with Nandita/Daniel next week (1/24). Instead, Nate/Fred will use the time to discuss the model. 
+4. However, we will work to have an updated model (e.g., Nate will address known bugs) and have applied it to PPR (Fred) for the next scheduled meeting with Nandita/Daniel (Jan 31).  
