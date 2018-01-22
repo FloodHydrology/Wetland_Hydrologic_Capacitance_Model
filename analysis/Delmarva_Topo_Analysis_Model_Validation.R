@@ -9,7 +9,7 @@
 rm(list=ls(all=TRUE))
 
 #Define Master Working Directory
-dir<-"//nfs/WHC-data/Validation_Modeling/WHC_BaltimoreCorner"
+dir<-"X:/Validation_Modeling/WHC_BaltimoreCorner"
 
 #Load Required Packages
 library(raster)   #spatial analysis
@@ -20,11 +20,10 @@ library(plyr)     #data processing
 library(dplyr)    #data processing
 
 #Save to backup folder
-load(paste0(dir, "/Backup/input_dat.RData"))
-
+load(paste0(dir, "/Backup/input_data.RData"))
 
 #Call Function DEM Processing F(x) into Memory
-source("/R/DEM_Processing.R")
+source("R/DEM_Processing.R")
 
 #Run Terrain Analysis Subroutine
 DEM_Processing.fun(dem, pp, wd)

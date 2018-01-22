@@ -6,8 +6,8 @@
 ##################################################################################
 
 DEM_Processing.fun<-function(dem,pp,wd, 
-                             saga.path="C:\\Program Files (x86)/SAGA-GIS", 
-                             python.path="C:\\Python27\\ArcGIS10.2\\", 
+                             saga.path="C:\\Program Files/saga-6.2.0_x64", 
+                             python.path="C:\\Python27\\ArcGIS10.4\\", 
                              scratchspace="C:\\ScratchWorkspace"){
   
   ####################################################################################
@@ -31,6 +31,7 @@ DEM_Processing.fun<-function(dem,pp,wd,
   ####################################################################################
   #SetupSaga Environment~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #Filter dem
+  focal<-focalWeight(x=dem.grd, type="Gauss")
   dem_filter.grd<- focal(dem.grd, w=focalWeight(dem.grd, 5, "Gauss"))
   dem_filter.grd<- focal(dem_filter.grd, w=focalWeight(dem_filter.grd, 5, "Gauss"))
   dem_filter.grd<- focal(dem_filter.grd, w=focalWeight(dem_filter.grd, 5, "Gauss"))
