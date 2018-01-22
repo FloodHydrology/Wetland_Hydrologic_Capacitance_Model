@@ -37,8 +37,10 @@ pp.shp<-SpatialPoints(pp)
 pp.shp<-SpatialPointsDataFrame(pp, data.frame(x=500674.396458, y=155144.28711))
 
 #Convert all data sources into correct format
-dem<-projectRaster(dem, crs=soils.shp@proj4string)
-pp.shp<-spTransform(pp.shp, dem@crs)
+proj<-CRS("+proj=utm +zone=17 +ellps=GRS80 +datum=NAD83 +units=m +no_defs") 
+dem<-projectRaster(dem, crs=proj)
+soils.shp<-spTransform(soils.shp, proj)
+pp.shp<-spTransform(pp.shp, proj)
 
 #Plot to make sure there is overlap
 plot(dem)
