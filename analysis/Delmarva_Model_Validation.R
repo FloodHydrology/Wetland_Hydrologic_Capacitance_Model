@@ -24,29 +24,37 @@ library(plyr)     #data processing
 library(dplyr)    #data processing
 library(Evapotranspiration)
 
+#Define projection for the project
+proj<-CRS("+proj=utm +zone=17 +ellps=GRS80 +datum=NAD83 +units=m +no_defs") 
+
 #Obtain Model Inputs
 dem<-raster(readGDAL(paste0(dir,"/Model Inputs/DEM/dem")))      #DEM (from USDA-Amir Sharifi)
 soils.shp<-readOGR(dsn = paste0(dir,'/Model Inputs/Soils'), layer='SSURGO')  #SSURGO data
 climate<-read.csv(paste0(dir,"/Model Inputs/Climate/ncdc.csv"))
-giw.ID<-63 #Need to update with coordinates of the wetland in question.
 
-#Add pp for watershed  (For now define this manually)
-proj<-CRS("+proj=utm +zone=17 +ellps=GRS80 +datum=NAD83 +units=m +no_defs") 
+#Convert all data sources into correct format
+dem<-projectRaster(dem, crs=proj)
+soils.shp<-spTransform(soils.shp, proj)
+
+#Add pour point for watershed  
 pp<-data.frame(x=947025.897981, y=4335592.83542)
 coordinates(pp)<-~x+y
 projection(pp)<-proj
 pp.shp<-SpatialPoints(pp)
 pp.shp<-SpatialPointsDataFrame(pp, data.frame(x=947025.897981, y=4335592.83542))
 
-#Convert all data sources into correct format
-dem<-projectRaster(dem, crs=proj)
-soils.shp<-spTransform(soils.shp, proj)
-pp.shp<-spTransform(pp.shp, proj)
+#Identify wetland of interest 
+wetland<-data.frame(x=947057.170661, y=4335552.88131)
+coordinates(wetland)<-~x+y
+projection(wetland)<-proj
+wetland.shp<-SpatialPoints(wetland)
+wetland.shp<-SpatialPointsDataFrame(wetland, data.frame(x=947025.897981, y=4335592.83542))
 
 #Plot to make sure there is overlap
 plot(dem)
 plot(soils.shp, border="grey60", cex=0.25, add=T)
 plot(pp.shp, pch=19, col="red", cex=3, add=T)
+plot(wetland.shp, pch=19, col="green", cex=3, add=T)
 
 #Save to backup folder
 save.image(paste0(dir, "/Backup/input_data.RData"))
