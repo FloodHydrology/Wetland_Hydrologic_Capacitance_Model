@@ -5,8 +5,7 @@
 #Purpose: Provide Function for Topographic analysis 
 ##################################################################################
 
-DEM_Processing.fun<-function(dem,pp,wd, 
-                             saga.path="C:\\Program Files/saga-6.2.0_x64", 
+DEM_Processing.fun<-function(dem.grd,pp.shp, 
                              python.path="C:\\Python27\\ArcGIS10.4\\", 
                              scratchspace="C:\\ScratchWorkspace"){
   
@@ -21,104 +20,22 @@ DEM_Processing.fun<-function(dem,pp,wd,
   library(rgdal)
   library(dplyr)
   library(magrittr)
-  
-  #Define Variables
-  dem.grd<-dem
-  pp.shp<-pp
-  
+
   ####################################################################################
-  #Step 2: Watershed Delineation (RSAGA)----------------------------------------------
+  #Step 2: Identify "sinks" and basins (ArcPyGeo)-------------------------------------
   ####################################################################################
-  #SetupSaga Environment~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #Filter dem
-  focal<-focalWeight(x=dem.grd, type="Gauss")
-  dem_filter.grd<- focal(dem.grd, w=focalWeight(dem.grd, 5, "Gauss"))
-  dem_filter.grd<- focal(dem_filter.grd, w=focalWeight(dem_filter.grd, 5, "Gauss"))
-  dem_filter.grd<- focal(dem_filter.grd, w=focalWeight(dem_filter.grd, 5, "Gauss"))
-  dem_filter.grd@crs<-dem.grd@crs
-  
-  #Create Watershed Delineation function~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  delineate.fun<-function(outlet.shp,dem_filter.grd,fdr.grd, saga.path, scratchspace){
-    #define working directory
-    setwd(scratchspace)
-    
-    #define saga working environment
-    saga<-rsaga.env(path=saga.path)
-    
-    #remove na from dem
-    dem.grd[is.na(dem.grd)]<-1
-    
-    #convert dem to sgrid
-    writeRaster(dem.grd, file="dem.sdat", overwrite=T)
-    
-    #fill dem
-    rsaga.fill.sinks('dem.sgrd','dem_fill.sgrd', minslope=0.0001,env=saga)
-    
-    #Create catchment area grid
-    rsaga.topdown.processing('dem_fill.sgrd', 
-                             out.carea = 'dem_ca.sgrd', 
-                             out.flowpath = 'flowpath.sgrd',
-                             method=3,
-                             env=saga)
-    rsaga.sgrd.to.esri('dem_ca.sgrd','dem_ca.asc', env=saga)
-    dem_ca.grd<-raster('dem_ca.asc')
-    rsaga.sgrd.to.esri('flowpath.sgrd','fdr.asc', env=saga)
-    fdr.grd<-raster('fdr.asc')
-    
-    
-    #Snap pour point
-    buffer <-   raster::extract(dem_ca.grd, outlet.shp, buffer=5,cellnumbers = T)[[1]] %>%  as.data.frame
-    snap_loc <- buffer$cell[which.max(buffer$value)]
-    snap_loc <- xyFromCell(dem_ca.grd, snap_loc)
-    
-    #Delineate Watershed
-    rsaga.geoprocessor(lib='ta_hydrology',4,  
-                       param=list(TARGET_PT_X = snap_loc[1,1],
-                                  TARGET_PT_Y = snap_loc[1,2], 
-                                  ELEVATION = 'dem_fill.sgrd', 
-                                  AREA= 'dem_ca.sgrd',
-                                  METHOD=0),
-                       env=saga)
-    
-    #Convert to polygon
-    rsaga.geoprocessor(lib = 'shapes_grid', 6,
-                       param = list(GRID = 'dem_ca.sgrd',
-                                    POLYGONS = 'watershed.shp',
-                                    CLASS_ALL = 0,
-                                    CLASS_ID = 100,
-                                    SPLIT = 0), 
-                       env=saga)
-    watershed.shp<-readShapeSpatial('watershed.shp')
-    
-    #Write watershed.shp to global environment
-    watershed.shp
-  }
-  
-  #Delineate
-  watershed.shp<-delineate.fun(pp.shp, dem.grd,fdr.grd,saga.path, scratchspace)
-  watershed.shp@proj4string<-dem.grd@crs
-  
-  ####################################################################################
-  #Step 3: Identify "sinks" and basins (ArcPyGeo)-------------------------------------
-  ####################################################################################
-  #Just for reference: http://sdmg.forestry.oregonstate.edu/node/89
-  
   #Setup Rpygeo environment~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #Create python environment
-  py.env<-rpygeo.build.env(python.path = "C:\\Python27\\ArcGIS10.2\\", 
+  py.env<-rpygeo.build.env(python.path = python.path, 
                            workspace = scratchspace,
                            overwriteoutput = 1) 
   
   #Set R directoy to python scratchworkspace
-  setwd("C:\\Python27\\ScratchWorkspace\\")
+  setwd(scratchspace)
   
   #Clear Scratch Space
   file.remove(list.files())
-  
-  #Copy pertinent files to python scratchspace
-  writeRaster(dem.grd, "dem.asc", overwrite=T)
-  writeOGR(watershed.shp, ".", "watershed",driver="ESRI Shapefile")
-  
+
   #Find Sinks and associated watersheds~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #Filter the DEM
   dem_filter.grd<- focal(dem.grd, w=focalWeight(dem.grd, 5, "Gauss"))
@@ -127,16 +44,53 @@ DEM_Processing.fun<-function(dem,pp,wd,
   dem_filter.grd@crs<-dem.grd@crs
   writeRaster(dem_filter.grd, file="dem_filter.asc", overwrite=T)
   
-  #fill sinks (up to 0.1m)
+  #fill sinks 
   rpygeo.geoprocessor(fun="Fill_sa",
-                      c("dem_filter.asc", "dem_fill",0.1),
+                      c("dem_filter.asc", "dem_fill"),
                       env=py.env
   )
   
   #Compute Flow Direction
   rpygeo.FlowDirection.sa("dem_fill","fdr_esri", env=py.env)
   
-  #Identify Sink
+  #Compute Flow Accumulation
+  rpygeo.FlowAccumulation.sa("fdr_esri","fac_esri", env=py.env)
+  fac.grd<-raster("fac_esri")
+  
+  #Define pour point
+  pp_buffer.shp<-gBuffer(pp.shp, width=30, byid=T)
+  snap_pp.grd<-mask(fac.grd, pp_buffer.shp)
+  snap_pp.grd[snap_pp.grd!=cellStats(snap_pp.grd, max)]<-NA
+  snap_pp.grd<-snap_pp.grd*0+1
+  writeRaster(snap_pp.grd, file="snap.asc", overwrite=T)
+  
+  #Delineate Watershed
+  rpygeo.geoprocessor("Watershed_sa",
+                      list("fdr_esri","snap.asc", "Value"),
+                      env=py.env)
+  rpygeo.geoprocessor(fun="RasterToPolygon_conversion",
+                      c("value", "watershed.shp", "NO_SIMPLIFY","VALUE"),
+                      env=py.env)
+  watershed.shp<-readOGR(".","watershed")
+  
+  #Extract DEM by mask
+  dem_mask.grd<-mask(dem.grd, gBuffer(watershed.shp,width=15))
+  dem_save.grd<-dem_mask.grd
+  dem_mask.grd<-crop(dem_mask.grd, gBuffer(watershed.shp,width=15))
+  dem_mask.grd<-focal(dem_mask.grd, w=focalWeight(dem_mask.grd, 5, "Gauss"))
+  writeRaster(dem_mask.grd,"dem_mask.asc", overwrite=T)
+  
+  
+  #fill sinks 
+  rpygeo.geoprocessor(fun="Fill_sa",
+                      c("dem_mask.asc", "dem_mask",0.1),
+                      env=py.env
+  )
+  
+  #Redo flow direction
+  rpygeo.FlowDirection.sa("dem_mask","fdr_esri", env=py.env)
+  
+  #Identify Sinks in watershed
   rpygeo.Sink.sa("fdr_esri", "sink", env=py.env)
   
   #run basin tool
@@ -152,26 +106,16 @@ DEM_Processing.fun<-function(dem,pp,wd,
                       c("basin", "basin.shp", "NO_SIMPLIFY","VALUE"),
                       env=py.env)
   
-  #Clip everything to delineated watershed
-  rpygeo.geoprocessor(fun="Clip_analysis ",
-                      c("basin.shp","watershed.shp","basin_clip"),
-                      env=py.env)
-  rpygeo.geoprocessor(fun="Clip_analysis ",
-                      c("sink.shp","watershed.shp","sink_clip"),
-                      env=py.env)
-  
+ 
   #Bring everything into the R environment
-  sink.shp<-readOGR(".","sink_clip")
-  basin.shp<-readOGR(".","basin_clip")
+  sink.shp<-readOGR(".","sink")
+  basin.shp<-readOGR(".","basin")
   
   ####################################################################################
-  #Step 4: Estimate Spill elevations (Raster)-----------------------------------------
+  #Step 3: Estimate Spill elevations (Raster)-----------------------------------------
   ####################################################################################
   #rename basin id's
   basin.shp@data$ID<-seq(1:length(basin.shp))
-  
-  #set working directory
-  setwd(paste0(wd,"/ScratchWorkspace"))
   
   #Create Inundate Function
   inundate.fun<-function(basin.id){
@@ -244,7 +188,7 @@ DEM_Processing.fun<-function(dem,pp,wd,
   volume<-df[101:200,]
   
   ####################################################################################
-  #Step 5: Export Data----------------------------------------------------------------
+  #Step 4: Export Data----------------------------------------------------------------
   ####################################################################################
   #Assign data to Global Env
   assign('watershed.shp',watershed.shp, env=.GlobalEnv)
@@ -252,4 +196,5 @@ DEM_Processing.fun<-function(dem,pp,wd,
   assign('basin.shp',basin.shp, env=.GlobalEnv)
   assign('area',area, env=.GlobalEnv)
   assign('volume',volume, env=.GlobalEnv)
+  assign('dem.grd',dem_save.grd, env=.GlobalEnv)
 }
