@@ -48,7 +48,7 @@ plot(soils.shp, border="grey60", cex=0.25, add=T)
 plot(pp.shp, pch=19, col="red", cex=3, add=T)
 
 #Save to backup folder
-save.image(paste0(dir, "/Backup/input_dat.RData"))
+save.image(paste0(dir, "/Backup/input_data.RData"))
   
 ####################################################################################
 # Step 2: Topographic Analysis-------------------------------------------------------
