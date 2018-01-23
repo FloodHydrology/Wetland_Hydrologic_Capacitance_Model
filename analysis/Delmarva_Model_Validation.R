@@ -12,7 +12,7 @@
 rm(list=ls(all=TRUE))
 
 #Define working and data directories
-wd<-"~/Wetland_Hydrologic_Capacitance_Model"
+wd<-"Wetland_Hydrologic_Capacitance_Model"
 dir<-"//nfs/WHC-data/Validation_Modeling/WHC_BaltimoreCorner"
 
 #Load Required Packages
@@ -53,8 +53,8 @@ wetland.shp<-SpatialPointsDataFrame(wetland, data.frame(x=947025.897981, y=43355
 #Plot to make sure there is overlap
 plot(dem)
 plot(soils.shp, border="grey60", cex=0.25, add=T)
-plot(pp.shp, pch=19, col="red", cex=3, add=T)
-plot(wetland.shp, pch=19, col="green", cex=3, add=T)
+plot(pp.shp, pch=19, col="red", cex=1, add=T)
+plot(wetland.shp, pch=19, col="green", cex=1, add=T)
 
 #Save to backup folder
 save.image(paste0(dir, "/Backup/input_data.RData"))
@@ -75,18 +75,18 @@ save.image(paste0(dir, "/Backup/input_data.RData"))
 ####################################################################################
 # Step 3: Soils Analysis------------------------------------------------------------
 ####################################################################################
-#Clear Memory~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#Clear Memory
 rm(list=ls(all=TRUE))
 
 #Define working and data directories
-wd<-"~/Wetland_Hydrologic_Capacitance_Model"
-dir<-"//nfs/WHC-data/Validation_Modeling/WHC_BaltimoreCorner"
+wd3<-"~/Wetland_Hydrologic_Capacitance_Model"
+dir3<-"//nfs/WHC-data/Validation_Modeling/WHC_BaltimoreCorner"
 
 #Load soil database
-soil.data<-read.csv(paste0(dir,"/Model Inputs/Soils/WHC_Soils_Input.csv"))
+soil.data<-read.csv(paste0(dir3,"/Model Inputs/Soils/WHC_Soils_Input.csv"))
 
 #Load data from step 2
-load(paste0(dir, "/Backup/DEM_Processing.RData"))
+load(paste0(dir3, "/Backup/DEM_Processing.RData"))
 
 #manipulate soils data
 soils.shp<-spTransform(soils.shp, dem@crs) #transform the layer
@@ -128,13 +128,14 @@ climatedata<-data.frame(substr(climate$DATE,1,4))
 colnames(climatedata)<-"Year"
 climatedata$Month<-as.numeric(substr(climate$DATE,5,6))
 climatedata$Day<-as.numeric(substr(climate$DATE,7,8))
-climatedata$Tmax.daily<-(climate$TMAX)
-climatedata$Tmin.daily<-(climate$TMIN)
-climatedata$RHmax.daily<-0
-climatedata$RHmin.daily<-0
-climatedata$Rs.daily<-0
+climatedata$Tmax<-(climate$TMAX)
+climatedata$Tmin<-(climate$TMIN)
+climatedata$RHmax<-0
+climatedata$RHmin<-0
+climatedata$Rs<-0
 #create timeseries input file (second input file)
-input<-ReadInputs(climatedata,
+input<-ReadInputs(varnames = colnames(climatedata),
+                  climatedata=climatedata,
                   stopmissing=c(10,10,3), 
                   timestep = "daily", 
                   interp_missing_days = F, 
@@ -147,7 +148,9 @@ data("constants")
 constants$Elev<-10
 constants$lat_rad<-38.8846*pi/180
 #calculate ET
-df<-ET.HargreavesSamani(input, constants, ts="daily")
+df<-ET.HargreavesSamani(data=input, 
+                        constants=constants, 
+                        ts="daily")
 pet.VAR<-df$ET.Daily
 pet.VAR[pet.VAR<0]<-0
 pet.VAR[is.na(pet.VAR)==T]<-0
@@ -191,13 +194,6 @@ land.INFO[,"kb"]<-              0.046                               #Defined fro
 #define number of wetlands
 n.wetlands<-1
 
-#define wetland id (visually for now)
-plot(basin.shp)
-invisible(text(getSpPPolygonsLabptSlots(basin.shp), 
-               labels=as.character(basin.shp@data$ID), 
-               cex=0.9))
-giw.ID<-63
-
 #create input variables
 giw.INFO<-c("giw.ID","area_watershed","area_wetland","invert","vol_ratio", #geometric characteristics
             "n","s_fc","psi","y_cl", "y_c", "s_wilt", "k_sat", "RD", "b", "Sy", #soil characteristics
@@ -210,7 +206,7 @@ giw.INFO<-matrix(0, nrow=n.wetlands, ncol=length(giw.INFO), dimnames = list(seq(
 #Populate giw.INFO matrix (length units in mm)
 giw.INFO[,"giw.ID"]<-          giw.ID
 giw.INFO[,"area_watershed"]<-  (gArea(basin.shp, byid = T)[giw.ID])*(1000^2)
-giw.INFO[,"area_wetland"]<-    max(area[,63])*(1000^2)
+giw.INFO[,"area_wetland"]<-    max(area[,giw.ID])*(1000^2)
 giw.INFO[,"invert"]<-         -1000*0.05*(length(area[,giw.ID][area[,giw.ID]!=max(area[,giw.ID], na.rm=T)]))   
 giw.INFO[,"n"]<-              soils$n
 giw.INFO[,"s_fc"]<-           soils$s_fc/100  
@@ -227,36 +223,35 @@ giw.INFO[,"s_t_0"]<-          giw.INFO[,"s_fc"]
 giw.INFO[,"vol_ratio"]<-      0 #ratio of upstream wetland volume
 
 #save image
-save.image(paste0(wd,"/Backup/inputs.RData"))
+save.image(paste0(dir3,"/Backup/model_parameters.RData"))
 
 ####################################################################################
 # Step 6: Run WHC-------------------------------------------------------------------
 ####################################################################################
+#Setup workspace~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#Clear memory
+rm(list=ls(all=TRUE))
+
+#Define working and data directories
+wd5<-"~/Wetland_Hydrologic_Capacitance_Model"
+dir5<-"//nfs/WHC-data/Validation_Modeling/WHC_BaltimoreCorner"
+
 #Load WHC functiono
-source(paste0(wd,"/R_Functions/WHC_2.R"))
+source(paste0(wd5,"/R/WHC_2.R"))
+
+#Load previous workspace
+load((paste0(dir5,"/Backup/model_parameters.RData")))
 
 #Define time period for simulations
 ramp<-3
 n.years<-length(pet.VAR)/365*ramp
 
 #Calibrations~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#Surface water volume to stage relationship
-load(paste0(wd,"/Backup/BC_stage_volume.RData"))
-var<-14
-area[,giw.ID]<-df$area[var]
-area[1:var,giw.ID]<-df$area[1:var]
-volume[,giw.ID]<-df$volume[var]
-volume[1:var,giw.ID]<-df$volume[1:var]
-giw.INFO[,"invert"]<- -1000*0.05*(length(area[,giw.ID][area[,giw.ID]!=max(area[,giw.ID], na.rm=T)]))
-
 #Remove coastal precipitation events
 date<-strptime(climate$DATE,"%Y%m%d")
-#Fall 2008
 precip.VAR[as.yearmon(date)=="Sep 2008"]<-0
 precip.VAR[as.yearmon(date)=="Oct 2008"]<-0
-#Fall 2010
 precip.VAR[date==paste(as.Date("2010-08-18"))]<-0
-#precip.VAR[as.yearmon(date)=="Sep 2010"]<-0
 precip.VAR[as.yearmon(date)=="Oct 2010"]<-0
 
 #Go Time!!!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -270,67 +265,3 @@ WHC<-wetland.hydrology(giw.INFO,
                        volume,
                        giw.ID)
 
-####################################################################################
-# Step 8: Analyze outputs-----------------------------------------------------------
-####################################################################################
-#download water level data
-data<-read.csv("Validation Data/baltimore_corner.csv")
-data<-data[data$y_w>-1.5,] #remove data days
-data<-aggregate(data$y_w, list(paste(data$date)), FUN='mean')
-colnames(data)<-c("date", "y_w")
-data$date<-strptime(data$date, format="%m/%d/%Y")
-data<-data[order(data$date),]
-
-#creatae date for simulated data
-date<-strptime(climate$DATE,"%Y%m%d")
-giw<-giw[(length(date)+1):(length(date)*2),]
-giw$date<-date
-watershed<-watershed[length(date)+1:length(date)*2,]
-watershed$date<-date
-
-#combine datasets
-df<-data.frame(paste(giw$date), as.numeric(paste(giw$y_w)))
-colnames(df)<-c('date','mod')
-df<-merge(df, data, by='date')
-colnames(df)<-c('date','mod','obs')
-df$obs<-df$obs*1000-700
-
-#Initial Plot~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-jpeg("M:\\McLaughlin_Lab/Jones/workspace/GIW Modeling/USDA Water Balance/WHC_BaltimoreCorner/Model Output/validation.jpg", res=300, width=4, height=2.5, units="in")
-par(mar=c(3.25,3.25,0.35,0.35))
-par(mgp=c(2,0.5,0))
-plot(date,giw$y_w-giw.INFO[,"invert"],type="n", 
-     ylim=c(-500,750), 
-     ps=12, cex.axis=10/12, cex.lab=14/12,
-     ylab="Water Level [mm]",xlab="[Year]",
-     panel.first=grid(nx=8, ny=6, lty=2, lwd=0.9, col="grey80")
-)
-points(data$date, (data$y_w*1000), type="l",col="grey40", lty=2, lwd=1.1)
-points(giw$date, giw$y_w-giw.INFO[,"invert"], type="l",lwd=1.25, col="grey10")
-legend("bottom", c("Observed","Modeled"), lty=c(2,1), lwd=2, col=c("grey60","grey30"), cex=10/12, box.col="white")#,bty="n", box.col="white")
-box()
-dev.off()
-
-#Calculate RSQ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#Combine Daily
-daily<-summary(lm(df[,2]~df[,3]))$r.squared
-
-#monthly
-df<-data.frame(aggregate(df$mod, list(format(as.Date(df$date), format="%m-%Y")), mean),
-               aggregate(df$obs, list(format(as.Date(df$date), format="%m-%Y")), mean)[,2])
-colnames(df)<-c("date","mod","obs")
-monthly<-summary(lm(df$mod~df$obs))$r.squared    
-
-#annual
-df<-data.frame(aggregate(df$mod, list(substr(df$date,4,8)), mean),
-               aggregate(df$obs, list(substr(df$date,4,8)), mean)[,2])
-colnames(df)<-c("date","mod","obs")
-annual<-summary(lm(df$mod~df$obs))$r.squared  
-
-#print
-c(daily, monthly, annual)
-
-####################################################################################
-# Step 9: Export Observed and Modeled
-####################################################################################
-write.csv(df,"C:\\Users/cnjones/Google Drive/Research Projects/Delmarva_GIW/Presentations/201612_AGU/ValidationPlot/Delmarva.csv", row.names=F)
