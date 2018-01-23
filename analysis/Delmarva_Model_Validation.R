@@ -243,8 +243,7 @@ source(paste0(wd5,"/R/WHC_2.R"))
 load((paste0(dir5,"/Backup/model_parameters.RData")))
 
 #Define time period for simulations
-ramp<-3
-n.years<-length(pet.VAR)/365*ramp
+n.years<-length(pet.VAR)/365
 
 #Calibrations~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Remove coastal precipitation events
@@ -258,10 +257,38 @@ precip.VAR[as.yearmon(date)=="Oct 2010"]<-0
 #Run Model
 WHC<-wetland.hydrology(giw.INFO, 
                        land.INFO, 
-                       rep(precip.VAR,ramp), 
-                       rep(pet.VAR,ramp), 
+                       precip.VAR, 
+                       pet.VAR, 
                        n.years, 
                        area, 
                        volume,
                        giw.ID)
+
+#Initial Plot~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#Plotting Parameters
+par(mar=c(3,3,0,0)+0.25)
+par(mgp=c(2,0.6,0)) 
+par(ps=12)
+par(cex.lab=14/12)
+par(cex.axis=10/12)
+
+#plot blank plot
+plot(watershed$y_wt, 
+     #Plot Type
+     type="n", 
+     #Axes labels
+     xlab="Simulation Day", ylab="Relative Elevation [mm]")
+
+#Plot Upland Water Level
+points(watershed$y_wt, type="l", lty=2, lwd=2, col="darkorange")
+
+#Plot lumped wetland water level
+points(watershed$y_w, type="l", lty=2, lwd=2, col="navyblue")
+
+#plot legend
+legend("bottomleft",
+       lty=2,, lwd=2, col=c("navyblue","darkorange"),
+       c("Upland Wetland Stage", "Upland Water Table"),
+       bty="n")
+
 

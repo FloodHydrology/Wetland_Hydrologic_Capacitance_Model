@@ -14,9 +14,7 @@ wetland.hydrology<-function(giw.INFO, land.INFO, precip.VAR, pet.VAR, n.years, a
 ####################################################################################
 # Step 2: Create stage-storage and stage-area relationships------------------------
 ####################################################################################
-#Locate correct GIW.INFO info
-giw.INFO<-matrix(giw.INFO[giw.ID,],nrow=1,  dimnames = list(c(1), colnames(giw.INFO)))
-  
+
 #Create relationships for GIW module~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
 #isolate area and volume matrices
 temp<-(length(area[,giw.ID][area[,giw.ID]!=max(area[,giw.ID], na.rm=T)])+1)   
