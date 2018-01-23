@@ -404,34 +404,70 @@ for(i in 1:((365*n.years)-1)){
 ####################################################################################
 # Step 6: Summarize Results---------------------------------------------------------
 ####################################################################################
-#Calcutlate waterbalance components 
-SW_GW<-GW_local.VAR[,3]
-water_balance<-data.frame(precip=sum(precip.VAR)/1000,
-                          PET=sum(pet.VAR)/1000,
-                          ET=(sum(ET_lm.VAR[,3])+sum(ET_wt.VAR[,3]))/1000,
-                          SW_out=sum(spill_vol.VAR[,3])/1000/giw.INFO[,"area_wetland"],
-                          SW_in=sum(runoff_vol.VAR[,1]/giw.INFO[,"area_wetland"]*giw.INFO[,"vol_ratio"])/1000,
-                          GW_out=sum(SW_GW[SW_GW<0])/giw.INFO[,"area_wetland"]/1000,
-                          GW_in=sum(SW_GW[SW_GW>0])/giw.INFO[,"area_wetland"]/1000)
+#Collect Results~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#Individual Wetland
+giw<-data.frame(y_w.VAR[,3],      #water level (mm)
+                V_w.VAR[,3],      #water volume (mm^3/day)
+                r_a.VAR[,3],      #radius of effective aquifer (m)
+                R.VAR[,3],        #recharge (mm/day)
+                ET_wt.VAR[,3]+
+                 ET_lm.VAR[,3],  #Total ET
+                GW_local.VAR[,3], #Local GW Exchange (mm^3/day)
+                s_lim.VAR[,3],    #soil moisture (%)
+                spill_vol.VAR[,3], #spill volume (mm^3)
+                runoff_vol.VAR[,1]*giw.INFO[wet.INFO,"area_watershed"]/(land.INFO[,"area"]-land.INFO[,"wetland_area"])
+)
+colnames(giw)<-c("y_w", "V_w", "r_a", "R", "ET", "GW_local", "s", "spill_vol", "sat_ex")
+assign("giw",giw, env=.GlobalEnv)
 
-#Calculate mean water level for each calander day
-hydrograph<-data.frame(day=rep(seq(1,365),1000), y_w=y_w.VAR[1:365000,3])
-hydrograph$y_w<- hydrograph$y_w + abs(giw.INFO[,"invert"])
-hydrograph$y_w<-ifelse(hydrograph$y_w>0, 
-                       hydrograph$y_w/abs(giw.INFO[,"invert"]), 
-                       hydrograph$y_w/abs(giw.INFO[,"y_cl"]))
-hydrograph<- hydrograph %>% group_by(day) %>% summarise(y_w = mean(y_w))
-y_w<-data.frame(t(hydrograph$y_w))
-colnames(y_w)<-hydrograph$day
-
-#Combine data
-output<-cbind(giw.INFO, water_balance, y_w)
-
-#Export
-output
+#Lumped Watershed
+watershed<-data.frame(y_wt.VAR[,1],       #water table depth
+                      y_w.VAR[,2],        #water depth of lumped wetland
+                      V_w.VAR[,2],        #volume of wetland
+                      R.VAR[,1],          #recharge
+                      GW_local.VAR[,1],   #Local GW exchange
+                      GW_bf.VAR[,1],      #GW out 
+                      ET_wt.VAR[,1]+
+                       ET_lm.VAR[,1]+
+                       ET_wt.VAR[,2],     #ET loss
+                      s_lim.VAR[,1],      #soil moisture (%)
+                      runoff_vol.VAR[,1], #runoff from sat ecxcess
+                      spill_vol.VAR[,2]   #spillsage
+)
+colnames(watershed)<-c("y_wt","y_w", "V_w", "R", "GW_local","GW_bf","ET","s", "runoff_vol","spill_vol")
+assign("watershed",watershed,env=.GlobalEnv)
 
 #Close Function
 }
+
+#Output for water balance components
+
+#Calcutlate waterbalance components 
+#SW_GW<-GW_local.VAR[,3]
+#water_balance<-data.frame(precip=sum(precip.VAR)/1000,
+#                          PET=sum(pet.VAR)/1000,
+#                          ET=(sum(ET_lm.VAR[,3])+sum(ET_wt.VAR[,3]))/1000,
+#                          SW_out=sum(spill_vol.VAR[,3])/1000/giw.INFO[,"area_wetland"],
+#                          SW_in=sum(runoff_vol.VAR[,1]/giw.INFO[,"area_wetland"]*giw.INFO[,"vol_ratio"])/1000,
+#                          GW_out=sum(SW_GW[SW_GW<0])/giw.INFO[,"area_wetland"]/1000,
+#                          GW_in=sum(SW_GW[SW_GW>0])/giw.INFO[,"area_wetland"]/1000)
+
+#Calculate mean water level for each calander day
+#hydrograph<-data.frame(day=rep(seq(1,365),1000), y_w=y_w.VAR[1:365000,3])
+#hydrograph$y_w<- hydrograph$y_w + abs(giw.INFO[,"invert"])
+#hydrograph$y_w<-ifelse(hydrograph$y_w>0, 
+#                       hydrograph$y_w/abs(giw.INFO[,"invert"]), 
+#                       hydrograph$y_w/abs(giw.INFO[,"y_cl"]))
+#hydrograph<- hydrograph %>% group_by(day) %>% summarise(y_w = mean(y_w))
+#y_w<-data.frame(t(hydrograph$y_w))
+#colnames(y_w)<-hydrograph$day
+
+#Combine data
+#output<-cbind(giw.INFO, water_balance, y_w)
+
+#Export
+#output
+
 
 
 
