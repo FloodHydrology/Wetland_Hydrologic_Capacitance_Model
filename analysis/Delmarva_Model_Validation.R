@@ -30,14 +30,14 @@ climate<-read.csv(paste0(dir,"/Model Inputs/Climate/ncdc.csv"))
 giw.ID<-63 #Need to update with coordinates of the wetland in question.
 
 #Add pp for watershed  (For now define this manually)
-pp<-data.frame(x=500674.396458, y=155144.28711)
+proj<-CRS("+proj=utm +zone=17 +ellps=GRS80 +datum=NAD83 +units=m +no_defs") 
+pp<-data.frame(x=947025.897981, y=4335592.83542)
 coordinates(pp)<-~x+y
-projection(pp)<-dem@crs
+projection(pp)<-proj
 pp.shp<-SpatialPoints(pp)
-pp.shp<-SpatialPointsDataFrame(pp, data.frame(x=500674.396458, y=155144.28711))
+pp.shp<-SpatialPointsDataFrame(pp, data.frame(x=947025.897981, y=4335592.83542))
 
 #Convert all data sources into correct format
-proj<-CRS("+proj=utm +zone=17 +ellps=GRS80 +datum=NAD83 +units=m +no_defs") 
 dem<-projectRaster(dem, crs=proj)
 soils.shp<-spTransform(soils.shp, proj)
 pp.shp<-spTransform(pp.shp, proj)
@@ -53,23 +53,15 @@ save.image(paste0(dir, "/Backup/input_data.RData"))
 ####################################################################################
 # Step 2: Topographic Analysis-------------------------------------------------------
 ####################################################################################
-#The topographic analysis requires connection to both ArcGIS and SAGA GIS.  This software
-#are not currently available on the SESYNC server, so this step is run using the 
-#Topo_Analysis_Model_Validation.R file. A few inmportant points:
-   #1) You will need to save Topo_Analysis_Model_Validation.R on YOUR CPU
-   #2) Note the "dir" variable will need to change from "/nfs" to the defined dir on your computer
-   #3) I would suggest cloaning the github repository to a workspace folder (eg "C:\\Workspace").  
-
-#Call Function DEM Processing F(x) into Memory
-source(paste0(wd, "/R_Functions/DEM_Processing.R"))
-
-
-
-#Run Terrain Analysis Subroutine
-DEM_Processing.fun(dem, pp, wd)
-
-#Backup
-save.image(paste0(wd,"/Backup/DEM_Processing.RData"))
+#To complete the topographic analysis, we use the RPyGeo package. It is a wrapper for 
+#ArcGIS and Python geoprocessing capabilities.  Unfortunately, ArcGIS is not available
+#on the SESYNC server, so this step has to be run on your local machine. Use the steps below. 
+  #1) Identify python path (see rpygeo.build.env function help)
+  #2) Map network drive to WHC-data folder
+  #3) Clone GitHub repository to your machine [eg "C://GIT_Workspace"]
+  #4) Create a "scratch workspace" folder to complete geoprocessing [e.g., "C://ScratchWorkspace"]
+  #5) Run "Topo_Analysis" function
+  #6) Be cautious of having simultaneous "git" folders. 
 
 ####################################################################################
 # Step 3: Soils Analysis-------------------------------------------------------------
