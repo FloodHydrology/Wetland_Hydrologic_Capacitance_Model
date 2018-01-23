@@ -8,7 +8,7 @@
 rm(list=ls(all=TRUE))
 
 #Define working and data directories
-wd<-"C:\\Users/njones/Desktop/github_workspace/Wetland_Hydrologic_Capacitance_Model"
+wd<-"C:\\Users/njones/Desktop/workspace/Wetland_Hydrologic_Capacitance_Model"
 dir<-"X:/Validation_Modeling/WHC_BaltimoreCorner"
 
 #Load Required Packages

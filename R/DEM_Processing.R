@@ -5,7 +5,7 @@
 #Purpose: Provide Function for Topographic analysis 
 ##################################################################################
 
-DEM_Processing.fun<-function(dem.grd,pp.shp, 
+DEM_Processing.fun<-function(dem.grd,pp.shp,wetland_pnt.shp, 
                              python.path="C:\\Python27\\ArcGIS10.4\\", 
                              scratchspace="C:\\ScratchWorkspace"){
   
@@ -117,6 +117,10 @@ DEM_Processing.fun<-function(dem.grd,pp.shp,
   #rename basin id's
   basin.shp@data$ID<-seq(1:length(basin.shp))
   
+  #Define giw.ID [The id of the main wetland being modeled]
+  basin.shp@proj4string<-wetland_pnt.shp@proj4string
+  giw.ID<-basin.shp[wetland_pnt.shp,]$ID
+  
   #Create Inundate Function
   inundate.fun<-function(basin.id){
     #select basin
@@ -197,4 +201,5 @@ DEM_Processing.fun<-function(dem.grd,pp.shp,
   assign('area',area, env=.GlobalEnv)
   assign('volume',volume, env=.GlobalEnv)
   assign('dem.grd',dem_save.grd, env=.GlobalEnv)
+  assign('giw.ID', giw.ID, env=.GlobalEnv)
 }
