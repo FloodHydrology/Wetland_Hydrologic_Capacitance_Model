@@ -11,7 +11,8 @@
 #Clear Memory
 rm(list=ls(all=TRUE))
 
-#Define Master Working Directory
+#Define working and data directories
+wd<-"~/Wetland_Hydrologic_Capacitance_Model"
 dir<-"//nfs/WHC-data/Validation_Modeling/WHC_BaltimoreCorner"
 
 #Load Required Packages
@@ -64,10 +65,20 @@ save.image(paste0(dir, "/Backup/input_data.RData"))
   #6) Be cautious of having simultaneous "git" folders. 
 
 ####################################################################################
-# Step 3: Soils Analysis-------------------------------------------------------------
+# Step 3: Soils Analysis------------------------------------------------------------
 ####################################################################################
-#Rest wd
-setwd(wd)
+#Clear Memory~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+rm(list=ls(all=TRUE))
+
+#Define working and data directories
+wd<-"~/Wetland_Hydrologic_Capacitance_Model"
+dir<-"//nfs/WHC-data/Validation_Modeling/WHC_BaltimoreCorner"
+
+#Load soil database
+soil.data<-read.csv(paste0(dir,"/Model Inputs/Soils/WHC_Soils_Input.csv"))
+
+#Load data from step 2
+load(paste0(dir, "/Backup/DEM_Processing.RData"))
 
 #manipulate soils data
 soils.shp<-spTransform(soils.shp, dem@crs) #transform the layer
@@ -77,7 +88,6 @@ soils.shp@data$area_m2<-gArea(soils.shp, byid=T) #calculate area
 #merge soils data with SSURGO database
 soils<-soils.shp@data 
 soils<-soils[,c("MUKEY","area_m2")]
-soil.data<-read.csv(paste0(wd,"/R_Functions/WHC_Soils_Input.csv"))
 soil.data$MUKEY<-paste(soil.data$MUID)
 soils<-left_join(soils, soil.data)
 remove(soil.data)
