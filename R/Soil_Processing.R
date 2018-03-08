@@ -33,7 +33,7 @@ soils<-fread("SWAT_SSURGO_Database_PPR.csv")
 ####################################################################################
 #Download soils data~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Temporarly change wd
-temp<-"/nfs/njones-data/Research Projects/GIW_Modeling/Data/SSURGO/"
+temp<-"/nfs/WHC-data/Data/SSURGO"
 setwd(paste0(temp))
 
 #Collect chorizon file paths
@@ -119,12 +119,16 @@ soils$y_cl<-as.numeric(soils$y_cl)
 ####################################################################################
 #Step 4: Critical depth calculation [FRED]
 ####################################################################################
-
-
+source("~/Wetland_Hydrologic_Capacitance_Model/R/get_yc.R")                 # compile yc 
+for(i in 1:length(soils[,1])){
+  soils$yc[i] <- get.yc(soils$clay[1], soils$sand[1])
+}
+  
+  
 ####################################################################################
 #Step 5: Export Soils Database!
 ####################################################################################
-wd<-"/nfs/njones-data/Research Projects/GIW_Modeling/Model Development/Soil Database (SSURGO Conversion)/"
+wd<-"/nfs/WHC-data/Soil Database (SSURGO Conversion)"
 setwd(paste0(wd))
 soils$MUID<-soils$Mukey
 soils$n<-abs(soils$n)
