@@ -5,11 +5,6 @@
 #Purpose: Demo sensitivity analysis for individual wetland manuscript
 ##################################################################################
 
-#Tasks to complete
-   #Stage-area and -volume relationship: change datum to wetland spill point.
-         #Note, in previous iteration I started this in the stage2volume_giw relationship.  However, 
-         #there needs to be comprehensive changes throughout the model to reflect this...
-
 ####################################################################################
 # Step 1: Setup Worskspace ---------------------------------------------------------
 ####################################################################################
@@ -17,7 +12,7 @@
 rm(list=ls(all=TRUE))
 
 #Define Master Working Directory
-wd<-"//nfs/WHC-data/Regional_Analysis_Demo/Delmarva"
+wd<-"//nfs/WHC-data/Regional_Analysis/Delmarva"
 setwd(wd)
 
 #Load Required Packages
@@ -25,27 +20,30 @@ library(sp)       #spatial analysis
 library(raster)   #spatial analysis
 library(rgdal)    #spatial analysis
 library(rgeos)    #spatial analysis
-#library(maptools) #spatial analysis
 library(dplyr)    #data processing
 library(rslurm)   #paralel computing
 
 #Download Model Inputs (and put everything in a uniform projection)
-load("Model_Inputs/climate.Rdata") #Climate data
-wetlands.shp<-readOGR("Model_Inputs/.","NWI")
+load("inputs/climate.Rdata") #Climate data
+wetlands.shp<-readOGR("inputs/.","NWI")
   wetlands.shp@data$WetID<-seq(1,length(wetlands.shp))
-HUC12.shp<-readOGR("Model_Inputs/.","HUC12")
+HUC12.shp<-readOGR("inputs/.","HUC12")
   HUC12.shp<-spTransform(HUC12.shp, wetlands.shp@proj4string)
-catchments.shp<-readOGR("Model_Inputs/.","NHD_catchments")
+catchments.shp<-readOGR("inputs/.","NHD_catchments")
   catchments.shp<-spTransform(catchments.shp, wetlands.shp@proj4string)
-flowlines.shp<-readOGR("Model_Inputs/.","NHDplus")
+flowlines.shp<-readOGR("inputs/.","NHDplus")
   flowlines.shp<-spTransform(flowlines.shp, wetlands.shp@proj4string)
-fac.grd<-raster("Model_Inputs/fac")
-soils.shp<-readOGR("Model_Inputs/.","soils")
+fac.grd<-raster("inputs/fac")
+soils.shp<-readOGR("inputs/.","soils")
   soils.shp<-spTransform(soils.shp, wetlands.shp@proj4string)
-  soils<-read.csv("Model_Inputs/WHC_Soils_Input.csv")
+  soils<-read.csv("inputs/WHC_Soils_Input.csv")
   soils.shp@data<-merge(soils.shp@data,soils, by.x='MUKEY', by.y="MUID")
   remove(soils)
-dem.grd<-raster("Model_Inputs/NHDPlus02/Elev_Unit_a/elev_cm")
+dem.grd<-raster("inputs/NHDPlus02/Elev_Unit_a/elev_cm")
+  mask<-spTransform(catchments.shp, dem.grd@crs)
+  dem.grd<-crop(dem.grd, mask)
+  remove(mask)
+  dem.grd<-projectRaster(dem.grd, crs=catchments.shp@proj4string)
 
 #Delineate "Isolated" Wetlands  (e.g. atleast 1000 ft from the stream)
 wetlands.shp$dist2stream<-apply(gDistance(flowlines.shp,wetlands.shp, byid=TRUE),1,min) #Calculate euclidean distance to stream network
@@ -60,13 +58,14 @@ plot(wetlands.shp, col="dark blue", add=T)
 
 #Save Image
 save.image("Inputs.Rdata")
+
 ####################################################################################
 # Step 2: Create Function to run individual wetlands--------------------------------
 ####################################################################################
 #Setup workspace
 remove(list=ls())
 load("Inputs.Rdata")
-source("/nfs/njones-data/Research Projects/IndividualWetland/Model_Demo/WHC_2.R")
+source("~/Wetland_Hydrologic_Capacitance_Model/R/WHC_2.R")
 
 #Initiate Function 
 fun<-function(WetID){
