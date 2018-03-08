@@ -1,0 +1,12 @@
+---
+title: "Waterloo Workshop - Day 1 (3/8/2018)"
+output: html_document 
+---
+
+Below are major decisions made on the first day of the Waterloo Workshop:
+
+1. We are going to [potentially] model wetlands in Canadian PPR, Cottonwwood Lakes, Florida Cypress Domes, Delmarva Bays, and Big Cypress. 
+2. For each area, we will apply the model to multiple wetlands.  We will then report objective function for the uncalibrated model, calibrated models, and validated models. 3. We will adjust the "individual wetland moudule" datum to reflect its elevation reletive to the catchment. 
+4. Wetland spillage from the "lumped module" will occur when the lumped wetland resevoir is full, even though this isn't quite physically based. 
+5. We will use the stage to volume relationship from Wu and Lane 2015 to represent wetland bathymetry. Again, we know this isn't quite correct.
+6. 
