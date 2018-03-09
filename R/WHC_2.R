@@ -9,7 +9,7 @@
 # Step 1: Setup Workspace-----------------------------------------------------------
 ####################################################################################
 #Start Function
-wetland.hydrology<-function(giw.INFO, land.INFO, precip.VAR, pet.VAR, n.years, area, volume, giw.ID){
+wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VAR, n.years, area, volume, giw.ID){
   
   ####################################################################################
   # Step 2: Create stage-storage and stage-area relationships------------------------
@@ -224,10 +224,10 @@ wetland.hydrology<-function(giw.INFO, land.INFO, precip.VAR, pet.VAR, n.years, a
       GW_local.VAR[day,wet.VAR]<<- 0
     }else{  #note r_a is the area of the effective aquifer 
       r_w<-(giw.INFO[,"area_wetland"]/pi)^0.5
-      r_ws<-(giw.INFO[,"area_watershed"]/pi)^0.5
+      r_ws<-(giw.INFO[,"area_watershed"]/pi)^0.5  ##### !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       f1<-function(x) pi*giw.INFO[wet.INFO,"k_sat"]*((y_wt.VAR[day, 1]^2)-(y_w.VAR[day, wet.VAR]^2))/log(x/r_w)
       #We need to reconceptualise r_ws length
-      GW_local.VAR[day,wet.VAR]<<- f1((r_ws*0.10))
+      GW_local.VAR[day,wet.VAR]<<- f1((r_ws))
     }
     
     #Adjust for differences in elevation

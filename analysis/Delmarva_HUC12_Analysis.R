@@ -74,7 +74,7 @@ save.image("Inputs.Rdata")                                                  # sa
 remove(list=ls())                                                           # clear environment
 load("Inputs.Rdata")                                                        # load inputs from previous processing
 source("~/Wetland_Hydrologic_Capacitance_Model/R/WHC_2.R")                  # compile WHC function 
-source("~/R/Wetland_Hydrologic_Capacitance_Model/R/get_yc.R")                 # compile WHC function 
+source("~/Wetland_Hydrologic_Capacitance_Model/R/get_yc.R")                 # compile yc 
 
 # Time to Initiate Function ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 fun<-function(WetID){                                                       # create function to process data and run WHC for a wetland of interest
@@ -84,7 +84,7 @@ fun<-function(WetID){                                                       # cr
   main_wetland.shp<-wetlands.shp[wetlands.shp$WetID==WetID,]
   main_wetland<-WetID
   
-  #Select spatial layers based on WetID  
+  # 2bii. Select spatial layers based on WetID  
   catchment_temp.shp<-catchments.shp[main_wetland.shp,]
   if(length(catchment_temp.shp)>1){catchment_temp.shp<-catchment_temp.shp[1,]}
   wetlands_temp.shp<-wetlands.shp[catchment_temp.shp,]
@@ -96,7 +96,7 @@ fun<-function(WetID){                                                       # cr
   fac_temp.grd<-crop(fac.grd, catchment_temp.shp)
   fac_temp.grd<-mask(fac_temp.grd, catchment_temp.shp)
   
-  #For now, add catchment aggregate soils data to soils with missing data
+  # 2biii. For now, add catchment aggregate soils data to soils with missing data
   soils_temp.shp@data$y_cl[is.na(soils_temp.shp@data$y_cl)]<-mean(soils_temp.shp@data$y_cl, na.rm=T)
   soils_temp.shp@data$y_rd[is.na(soils_temp.shp@data$y_rd)]<-mean(soils_temp.shp@data$y_rd, na.rm=T)
   soils_temp.shp@data$s_fc[is.na(soils_temp.shp@data$s_fc)]<-mean(soils_temp.shp@data$s_fc, na.rm=T)
@@ -105,12 +105,12 @@ fun<-function(WetID){                                                       # cr
   soils_temp.shp@data$clay[is.na(soils_temp.shp@data$clay)]<-mean(soils_temp.shp@data$clay, na.rm=T)
   soils_temp.shp@data$ksat[is.na(soils_temp.shp@data$ksat)]<-mean(soils_temp.shp@data$ksat, na.rm=T)
   
-  #Estimate area and volume to stage relationships~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # 2biv. Estimate area and volume to stage relationships~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #Create vectors to store area and volume to stage relationships
   area<-matrix(0, ncol=length(wetlands_temp.shp), nrow=100)
   volume<-matrix(0, ncol=length(wetlands_temp.shp), nrow=100)
   
-  #Use loop to calculate based on previously published relationships
+  # 2bv. Use loop to calculate based on previously published relationships
   for(i in 1:length(wetlands_temp.shp)){
     #Define WetID
     WetID<-wetlands_temp.shp$WetID[i]
@@ -140,41 +140,40 @@ fun<-function(WetID){                                                       # cr
     volume[(n.rows+1):100,n.col]<-volume.fun(hmax)
   }
   
-  
-  #Populate GIW.INFO Table~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #create input variables
+  # 2c. Populate GIW.INFO Tables ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # 2ci. Create input variables
   giw.INFO<-c("giw.ID","WetID","area_watershed","area_wetland","invert","vol_ratio", # geometric characteristics
               "n","s_fc","psi","y_cl", "y_c", "s_wilt", "k_sat", "RD", "b", "Sy",    # soil characteristics
               "y_w_0", "s_t_0"                                                       # initial conditions
   )
   
-  #Create giw.INFO matrix
+  # 2cii. Create giw.INFO matrix
   giw.INFO<-matrix(0, nrow=length(wetlands_temp.shp), ncol=length(giw.INFO), 
                    dimnames = list(seq(1,length(wetlands_temp.shp)), c(giw.INFO)))
   
-  #Define wetland variables (units == mm)
+  # 2ciii. Define wetland variables (units == mm)
   for(i in 1:length(wetlands_temp.shp)){
     
-    #Isolate soils data (if for osme reason we don't have ovlerlap, just use basin agregate)
+    # 2civ. Isolate soils data (if for osme reason we don't have ovlerlap, just use basin agregate)
     if(gIntersects(soils_temp.shp,wetlands_temp.shp[i,])==TRUE){
       temp_soils<-crop(soils_temp.shp,wetlands_temp.shp[i,])
     }else{
       temp_soils<-soils_temp.shp
     }
     
-    #Agregrate parameters based on space
+    # 2cv.Agregrate parameters based on space
     temp_soils$area<-gArea(temp_soils, byid=T)
     temp_soils<-temp_soils@data
     temp_soils<-colSums(temp_soils[,c("y_cl","y_rd","s_fc","s_w","n","clay","ksat")]*temp_soils[,"area"])/sum(temp_soils$area, na.rm=T)
     
-    #Isolate fac data and calculate ratio of upland drainage area to total drainage area
+    # 2cvi. Isolate fac data and calculate ratio of upland drainage area to total drainage area
     temp_fac<-crop(fac_temp.grd, wetlands_temp.shp[i,])
     temp_fac<-mask(temp_fac, wetlands_temp.shp[i,])
     temp_fac<-ifelse(cellStats(temp_fac*0+1, sum)>0,
                      cellStats(temp_fac,max)/cellStats(fac_temp.grd,max),
                      0)
     
-    #Populate giw.INFO table
+    # 2cvii. Populate giw.INFO table
     giw.INFO[i,"giw.ID"]<-         i  #ID used in the model, note this is differnt than the WetID
     giw.INFO[i,"WetID"]<-          wetlands_temp.shp$WetID[i]
     giw.INFO[i,"area_watershed"]<- gArea(catchment_temp.shp)*(10^6)
@@ -196,7 +195,7 @@ fun<-function(WetID){                                                       # cr
     giw.INFO[i, "dL"] <-           wetlands_temp.shp$dist2NearWet[i]
   }
   
-  #Populate land.INFO table~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # 2d. Populate land.INFO table~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   land.INFO<-c("area","invert", #geometric characteristics
                "n","s_fc","psi","y_cl", "y_c", "s_wilt", "k_sat", "RD", "b", #soil characteristics
                "slope", "kb",#larger watershed charactersitics
@@ -235,14 +234,25 @@ fun<-function(WetID){                                                       # cr
   land.INFO[,"kb"]<-              0.046                                         #Defined fromo literature. (Going to do with Gauge analysis eventually)
 
   
-  #Run the model~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # 2e. Populate lumped.INFO table~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  lumped.INFO<-c("r_w","dL") #geometric characteristics
+  
+  # Create lumped.INFO matrix
+  lumped.INFO<-matrix(0, nrow=length(wetlands.shp$WetID), ncol=2, dimnames = list(c(1:length(wetlands.shp$WetID)), c(lumped.INFO)))
+  
+  # Populate lumped.INFO matrix (length in mm); data for the wetlands in the lumped upland
+  lumped.INFO[, "dL"] <- wetlands.shp$dist2NearWet     # also convert from m to mm
+  lumped.INFO[,"r_w"] <- (((wetlands.shp$SHAPE_Area) / pi) ^ 0.5 )  # derive radius from area assuming circular geometry, convert
+  lumped.INFO <- lumped.INFO *1000
+  
+  # 2f. Run the model~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #Define the wetland
   giw.ID<-giw.INFO[,"giw.ID"][giw.INFO[,"WetID"]==main_wetland]
   
   #run model  
   n.years<-1000
   execute<-function(n.years){
-    tryCatch(wetland.hydrology(giw.INFO,land.INFO, precip.VAR, pet.VAR, n.years, area, volume, giw.ID),
+    tryCatch(wetland.hydrology(giw.INFO,land.INFO, lumped.INFO, precip.VAR, pet.VAR, n.years, area, volume, giw.ID),
              error = function(e) data.frame(matrix(0,ncol=390,nrow=1)))
   }
   WHC<-execute(1000)
