@@ -142,9 +142,9 @@ fun<-function(WetID){                                                       # cr
   
   # 2c. Populate GIW.INFO Tables ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # 2ci. Create input variables
-  giw.INFO<-c("giw.ID","WetID","area_watershed","area_wetland","invert","vol_ratio", # geometric characteristics
-              "n","s_fc","psi","y_cl", "y_c", "s_wilt", "k_sat", "RD", "b", "Sy",    # soil characteristics
-              "y_w_0", "s_t_0"                                                       # initial conditions
+  giw.INFO<-c("giw.ID","WetID","area_watershed","area_wetland","invert","vol_ratio", "dL",  # geometric characteristics
+              "n","s_fc","psi","y_cl", "y_c", "s_wilt", "k_sat", "RD", "b", "Sy",           # soil characteristics
+              "y_w_0", "s_t_0"                                                              # initial conditions
   )
   
   # 2cii. Create giw.INFO matrix
@@ -183,25 +183,26 @@ fun<-function(WetID){                                                       # cr
     giw.INFO[i,"s_fc"]<-           temp_soils["s_fc"]/100  
     giw.INFO[i,"psi"]<-            -16662*(temp_soils["n"]^7.8831) 
     giw.INFO[i,"y_cl"]<-           -1*temp_soils["y_cl"]   
-    giw.INFO[i,"y_c"]<-           - #-temp_soils["y_rd"]/2                       #critical depth (mm) 
-    giw.INFO[i,"s_wilt"]<-        temp_soils["s_w"]/100                       # soil moisture at permanent wilting point
-    giw.INFO[i,"k_sat"]<-         -temp_soils["ksat"]*24                      # saturated condcuctivity (mm/day)
-    giw.INFO[i,"RD"]<-            -temp_soils["y_rd"]                         # Rooting Depth (mm)
+    giw.INFO[i,"y_c"]<-            - temp_soils["y_rd"]/2                       #critical depth (mm) 
+    giw.INFO[i,"s_wilt"]<-         temp_soils["s_w"]/100                       # soil moisture at permanent wilting point
+    giw.INFO[i,"k_sat"]<-          -temp_soils["ksat"]*24                      # saturated condcuctivity (mm/day)
+    giw.INFO[i,"RD"]<-             -temp_soils["y_rd"]                         # Rooting Depth (mm)
     giw.INFO[i,"b"]<-              12.524*(temp_soils["clay"]/100)+3.6907 
     giw.INFO[i,"Sy"]<-             giw.INFO[i,"n"]*(1-giw.INFO[i,"s_fc"])
     giw.INFO[i,"y_w_0"]<-          0
     giw.INFO[i,"s_t_0"]<-          giw.INFO[i,"s_fc"]
     giw.INFO[i,"vol_ratio"]<-      temp_fac                                   # ratio of upstream wetland volume
     giw.INFO[i, "dL"] <-           wetlands_temp.shp$dist2NearWet[i]
+    giw.INFO[i, "dLe"] <-          wetlands_temp.shp$dist2NearWet[i]
   }
   
   # 2d. Populate land.INFO table~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  land.INFO<-c("area","invert", #geometric characteristics
-               "n","s_fc","psi","y_cl", "y_c", "s_wilt", "k_sat", "RD", "b", #soil characteristics
-               "slope", "kb",#larger watershed charactersitics
-               "y_wt_0", "s_t_0","GW_bf_0", #initial conditions
-               "Sy", #calculated terms
-               "wetland_invert","wetland_area","volume_max" #lumped wetland information
+  land.INFO<-c("area","invert",                                              # geometric characteristics
+               "n","s_fc","psi","y_cl", "y_c", "s_wilt", "k_sat", "RD", "b", # soil characteristics
+               "slope", "kb",                                                # larger watershed charactersitics
+               "y_wt_0", "s_t_0","GW_bf_0",                                  # initial conditions
+               "Sy",                                                         # calculated terms
+               "wetland_invert","wetland_area","volume_max"                  # lumped wetland information
   )
   
   #Create land.INFO matrix
@@ -241,7 +242,7 @@ fun<-function(WetID){                                                       # cr
   lumped.INFO<-matrix(0, nrow=length(wetlands.shp$WetID), ncol=2, dimnames = list(c(1:length(wetlands.shp$WetID)), c(lumped.INFO)))
   
   # Populate lumped.INFO matrix (length in mm); data for the wetlands in the lumped upland
-  lumped.INFO[, "dL"] <- wetlands.shp$dist2NearWet     # also convert from m to mm
+  lumped.INFO[, "dL"] <- wetlands.shp$dist2NearWet                  # also convert from m to mm
   lumped.INFO[,"r_w"] <- (((wetlands.shp$SHAPE_Area) / pi) ^ 0.5 )  # derive radius from area assuming circular geometry, convert
   lumped.INFO <- lumped.INFO *1000
   
