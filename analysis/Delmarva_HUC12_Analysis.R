@@ -75,7 +75,7 @@ remove(list=ls())                                                           # cl
 load("Inputs.Rdata")                                                        # load inputs from previous processing
 source("~/Wetland_Hydrologic_Capacitance_Model/R/WHC_2.R")                  # compile WHC function 
 source("~/Wetland_Hydrologic_Capacitance_Model/R/get_yc.R")                 # compile yc 
-
+WetID <- 1
 # Time to Initiate Function ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 fun<-function(WetID){                                                       # create function to process data and run WHC for a wetland of interest
   
@@ -244,6 +244,7 @@ fun<-function(WetID){                                                       # cr
   # Populate lumped.INFO matrix (length in mm); data for the wetlands in the lumped upland
   lumped.INFO[, "dL"] <- wetlands.shp$dist2NearWet                  # also convert from m to mm
   lumped.INFO[,"r_w"] <- (((wetlands.shp$SHAPE_Area) / pi) ^ 0.5 )  # derive radius from area assuming circular geometry, convert
+  lumped.INFO[,"dLe"] <- wetlands.shp$dist2NearWet                  # please change me!
   lumped.INFO <- lumped.INFO *1000
   
   # 2f. Run the model~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

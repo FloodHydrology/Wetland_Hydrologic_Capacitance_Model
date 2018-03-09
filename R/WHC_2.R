@@ -280,10 +280,8 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
     #dh.VAR[day,"wetland"]<<-y_wt.VAR[day,"land"]-y_w.VAR[day,"wetland"]
     #dl.VAR[day,"wetland"]<<-(land.INFO[,"area"]/pi)^0.5-(As.VAR[day,"wetland"]/pi)^0.5 #r_watershed-r_wetland
     #GW_local.VAR[day,"wetland"]<<-land.INFO[,"k_sat"]*Ax.VAR[day,"wetland"]*dh.VAR[day,"wetland"]/ dl.VAR[day,"wetland"]
-    
-    lumped.INFO[,'dL'] <- lumped.INFO[,'dLe'] + lumped.INFO[, 'r_w']
-    
-    GW_local_mat <- pi*land.INFO[,"k_sat"]*((y_wt.VAR[day, "land"]^2)-(y_w.VAR[day, "wetland"]^2)) /log(lumped.INFO[,'dL']/lumped.INFO[,r_w])
+  
+    GW_local_mat <- pi*land.INFO[,"k_sat"]*((y_wt.VAR[day, "land"]^2)-(y_w.VAR[day, "wetland"]^2)) /log(lumped.INFO[,'dLe'] + lumped.INFO[, 'r_w']/lumped.INFO[,"r_w"])
     GW_local.var[day, "wetland"] <<- sum(GW_local_mat)
     
     
