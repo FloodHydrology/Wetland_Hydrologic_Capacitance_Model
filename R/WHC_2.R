@@ -75,8 +75,8 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
   vol2stage_giw.fun<-approxfun(vol_giw.INFO[,2], vol_giw.INFO[,1])
 
   #TEMPRORARY FIX
-  stage2area_giw.fun<-approxfun(seq(to=0,from=giw.INFO[,"invert"], by=50),
-                                c(area[,giw.ID][area[,giw.ID]!=max(area[,giw.ID])], max(area[,giw.ID]))
+  stage2area_giw.fun<-approxfun(c(c(giw.INFO[,"y_cl"]),seq(to=0,from=giw.INFO[,"invert"], by=50)),
+                                c(0,area[,giw.ID][area[,giw.ID]!=max(area[,giw.ID])], max(area[,giw.ID]))
                                 )
 
   
@@ -282,7 +282,7 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
     #GW_local.VAR[day,"wetland"]<<-land.INFO[,"k_sat"]*Ax.VAR[day,"wetland"]*dh.VAR[day,"wetland"]/ dl.VAR[day,"wetland"]
   
     GW_local_mat <- pi*land.INFO[,"k_sat"]*((y_wt.VAR[day, "land"]^2)-(y_w.VAR[day, "wetland"]^2)) /log(lumped.INFO[,'dLe'] + lumped.INFO[, 'r_w']/lumped.INFO[,"r_w"])
-    GW_local.var[day, "wetland"] <<- sum(GW_local_mat)
+    GW_local.VAR[day, "wetland"] <<- sum(GW_local_mat)
     
     
     #change in wetland storage (mm^3)

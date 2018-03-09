@@ -108,7 +108,7 @@ fun<-function(WetID){                                                       # cr
   # 2biv. Estimate area and volume to stage relationships~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #Create vectors to store area and volume to stage relationships
   area<-matrix(0, ncol=length(wetlands_temp.shp), nrow=100)
-  volume<-matrix(0, ncol=length(wetlands_temp.shp), nrow=100)
+volume<-matrix(0, ncol=length(wetlands_temp.shp), nrow=100)
   
   # 2bv. Use loop to calculate based on previously published relationships
   for(i in 1:length(wetlands_temp.shp)){
@@ -236,10 +236,10 @@ fun<-function(WetID){                                                       # cr
 
   
   # 2e. Populate lumped.INFO table~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  lumped.INFO<-c("r_w","dL") #geometric characteristics
+  lumped.INFO<-c("r_w","dL", "dLe") #geometric characteristics
   
   # Create lumped.INFO matrix
-  lumped.INFO<-matrix(0, nrow=length(wetlands.shp$WetID), ncol=2, dimnames = list(c(1:length(wetlands.shp$WetID)), c(lumped.INFO)))
+  lumped.INFO<-matrix(0, nrow=length(wetlands.shp$WetID), ncol=3, dimnames = list(c(1:length(wetlands.shp$WetID)), c(lumped.INFO)))
   
   # Populate lumped.INFO matrix (length in mm); data for the wetlands in the lumped upland
   lumped.INFO[, "dL"] <- wetlands.shp$dist2NearWet                  # also convert from m to mm
@@ -262,7 +262,7 @@ fun<-function(WetID){                                                       # cr
   #Name columns
   colnames(WHC)<-c(#GIW Info
     "giw.ID","WetID","area_watershed","area_wetland","invert",
-    "vol_ratio","n","s_fc","psi","y_cl" ,"y_c","s_wilt","k_sat","RD", "b","Sy", "y_w_0" , "s_t_0",
+    "vol_ratio", "dL", "dLe", "n","s_fc","psi","y_cl" ,"y_c","s_wilt","k_sat","RD", "b","Sy", "y_w_0" , "s_t_0",
     #Water Balance
     "precip","PET","ET","SW_out","SW_in","GW_out","GW_in", 
     #Normalized Flow
