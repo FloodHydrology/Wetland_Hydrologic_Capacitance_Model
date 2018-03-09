@@ -142,9 +142,9 @@ fun<-function(WetID){                                                       # cr
   
   # 2c. Populate GIW.INFO Tables ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # 2ci. Create input variables
-  giw.INFO<-c("giw.ID","WetID","area_watershed","area_wetland","invert","vol_ratio", "dL",  # geometric characteristics
-              "n","s_fc","psi","y_cl", "y_c", "s_wilt", "k_sat", "RD", "b", "Sy",           # soil characteristics
-              "y_w_0", "s_t_0"                                                              # initial conditions
+  giw.INFO<-c("giw.ID","WetID","area_watershed","area_wetland","invert","vol_ratio", "dL", "dLe",  # geometric characteristics
+              "n","s_fc","psi","y_cl", "y_c", "s_wilt", "k_sat", "RD", "b", "Sy",                  # soil characteristics
+              "y_w_0", "s_t_0"                                                                     # initial conditions
   )
   
   # 2cii. Create giw.INFO matrix
