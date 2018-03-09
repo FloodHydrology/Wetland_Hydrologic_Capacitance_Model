@@ -73,7 +73,7 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
   #Create interpolation functions
   stage2vol_giw.fun<-approxfun(vol_giw.INFO[,1], vol_giw.INFO[,2])
   vol2stage_giw.fun<-approxfun(vol_giw.INFO[,2], vol_giw.INFO[,1])
-  
+  stage2area_giw.fun<-approxfun(vol_giw.INFO[,1], area_giw.INFO[,2])
   
   #Create relationship for upland module~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #Note, this is only for the surface water component
@@ -226,7 +226,7 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
     }else{  #note r_a is the area of the effective aquifer 
       #r_w<-(giw.INFO[,"area_wetland"]/pi)^0.5           # original
       # r_ws<-(giw.INFO[,"area_watershed"]/pi)^0.5       # original
-      r_w <-   (stage2area.fun(vol2stage_giw.fun(V_w.VAR[day, wet.VAR]))/pi)^0.5     # convert volume to stage to area, then to radius
+      r_w <-   (stage2area.fun(vol2stage_giw.fun(V_w.VAR[day, wet.VAR]))/pi)^0.5     # convert volume to stage, then to area, then to radius
       r_ws <- giw.INFO[wet.INFO, "dLe"] + r_w
       #r_ws <- giw.INFO[wet.INFO,"dL"]                # temp fix if no dLe
       f1<-function(x) pi*giw.INFO[wet.INFO,"k_sat"]*((y_wt.VAR[day, 1]^2)-(y_w.VAR[day, wet.VAR]^2))/log(x/r_w)
