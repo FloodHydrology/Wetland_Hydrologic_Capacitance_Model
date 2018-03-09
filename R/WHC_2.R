@@ -73,7 +73,15 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
   #Create interpolation functions
   stage2vol_giw.fun<-approxfun(vol_giw.INFO[,1], vol_giw.INFO[,2])
   vol2stage_giw.fun<-approxfun(vol_giw.INFO[,2], vol_giw.INFO[,1])
+<<<<<<< HEAD
   stage2area_giw.fun<-approxfun(vol_giw.INFO[,1], area_giw.INFO[,2])
+=======
+  
+  #TEMPRORARY FIX
+  stage2area_giw.fun<-approxfun(seq(to=0,from=giw.INFO[,"invert"], by=50),
+                                c(area[,giw.ID][area[,giw.ID]!=max(area[,giw.ID])], max(area[,giw.ID]))
+                                )
+>>>>>>> 7195588336926e34b3af6e8b1ff3ce439e2b41ca
   
   #Create relationship for upland module~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #Note, this is only for the surface water component
