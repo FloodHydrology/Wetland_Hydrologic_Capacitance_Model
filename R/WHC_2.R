@@ -227,8 +227,8 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
       #r_w<-(giw.INFO[,"area_wetland"]/pi)^0.5           # original
       # r_ws<-(giw.INFO[,"area_watershed"]/pi)^0.5       # original
       r_w <-   (stage2area.fun(vol2stage_giw.fun(V_w.VAR[day, wet.VAR]))/pi)^0.5     # convert volume to stage to area, then to radius
-      r_ws <- lumped.INFO[wet.INFO, "dLe"] + r_w
-      #r_ws <- lumped.INFO[wet.INFO,"dL"]                # temp fix if no dLe
+      r_ws <- giw.INFO[wet.INFO, "dLe"] + r_w
+      #r_ws <- giw.INFO[wet.INFO,"dL"]                # temp fix if no dLe
       f1<-function(x) pi*giw.INFO[wet.INFO,"k_sat"]*((y_wt.VAR[day, 1]^2)-(y_w.VAR[day, wet.VAR]^2))/log(x/r_w)
       #We need to reconceptualise r_ws length
       GW_local.VAR[day,wet.VAR]<<- f1((r_ws))
@@ -278,7 +278,7 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
     
     lumped.INFO[,'dL'] <- lumped.INFO[,'dLe'] + lumped.INFO[, 'r_w']
     
-    GW_local_mat <- pi*and.INFO[,"k_sat"]*((y_wt.VAR[day, "land"]^2)-(y_w.VAR[day, "wetland"]^2))
+    GW_local_mat <- pi*land.INFO[,"k_sat"]*((y_wt.VAR[day, "land"]^2)-(y_w.VAR[day, "wetland"]^2))
                    /log(lumped.INFO[,'dL']/lumped.INFO[,r_w])
     GW_local.var[day, "wetland"] <<- sum(GW_local_mat)
     
