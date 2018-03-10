@@ -236,7 +236,11 @@ volume<-matrix(0, ncol=length(wetlands_temp.shp), nrow=100)
 
   
   # 2e. Populate lumped.INFO table~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+<<<<<<< HEAD
+  lumped.INFO<-c("r_w","dL","dLe") #geometric characteristics
+=======
   lumped.INFO<-c("r_w","dL", "dLe") #geometric characteristics
+>>>>>>> ebf27720300b192d56f49e7363af97274e52e9c7
   
   # Create lumped.INFO matrix
   lumped.INFO<-matrix(0, nrow=length(wetlands.shp$WetID), ncol=3, dimnames = list(c(1:length(wetlands.shp$WetID)), c(lumped.INFO)))
@@ -330,7 +334,7 @@ load("results.Rdata")
 
 #Plot time series of wetland water level~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Transform data
-level<-data.frame(t(results[,26:390]))
+level<-data.frame(t(results[,28:392]))
 
 #Setup Plotting space
 par(mar=c(3.1,3.5,0.35,0.35))
