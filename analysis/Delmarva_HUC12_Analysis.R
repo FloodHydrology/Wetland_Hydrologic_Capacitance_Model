@@ -236,10 +236,10 @@ fun<-function(WetID){                                                       # cr
 
   
   # 2e. Populate lumped.INFO table~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  lumped.INFO<-c("r_w","dL") #geometric characteristics
+  lumped.INFO<-c("r_w","dL","dLe") #geometric characteristics
   
   # Create lumped.INFO matrix
-  lumped.INFO<-matrix(0, nrow=length(wetlands.shp$WetID), ncol=2, dimnames = list(c(1:length(wetlands.shp$WetID)), c(lumped.INFO)))
+  lumped.INFO<-matrix(0, nrow=length(wetlands.shp$WetID), ncol=3, dimnames = list(c(1:length(wetlands.shp$WetID)), c(lumped.INFO)))
   
   # Populate lumped.INFO matrix (length in mm); data for the wetlands in the lumped upland
   lumped.INFO[, "dL"] <- wetlands.shp$dist2NearWet                  # also convert from m to mm
@@ -321,7 +321,7 @@ load("results.Rdata")
 
 #Plot time series of wetland water level~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Transform data
-level<-data.frame(t(results[,26:390]))
+level<-data.frame(t(results[,28:392]))
 
 #Setup Plotting space
 par(mar=c(3.1,3.5,0.35,0.35))
@@ -359,7 +359,7 @@ par(cex.axis=10/12)
 par(cex.lab=14/12)
 
 #Start Boxplot
-boxplot(results[,22:25]/results$precip, col="grey90", pch=19, outcol="#7f7f7f7D", cex=0.5,
+boxplot(results[,24:27]/results$precip, col="grey90", pch=19, outcol="#7f7f7f7D", cex=0.5,
         ylim=c(0,6), ylab="Normalized Annual Flowpath Flux [mm/year]", 
         names = c("SW Outflow","SW Inflow", "GW Outflow", "GW Inflow")
 )
