@@ -108,7 +108,7 @@ fun<-function(WetID){                                                       # cr
   # 2biv. Estimate area and volume to stage relationships~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #Create vectors to store area and volume to stage relationships
   area<-matrix(0, ncol=length(wetlands_temp.shp), nrow=100)
-  volume<-matrix(0, ncol=length(wetlands_temp.shp), nrow=100)
+volume<-matrix(0, ncol=length(wetlands_temp.shp), nrow=100)
   
   # 2bv. Use loop to calculate based on previously published relationships
   for(i in 1:length(wetlands_temp.shp)){
@@ -192,8 +192,8 @@ fun<-function(WetID){                                                       # cr
     giw.INFO[i,"y_w_0"]<-          0
     giw.INFO[i,"s_t_0"]<-          giw.INFO[i,"s_fc"]
     giw.INFO[i,"vol_ratio"]<-      temp_fac                                   # ratio of upstream wetland volume
-    giw.INFO[i, "dL"] <-           wetlands_temp.shp$dist2NearWet[i]
-    giw.INFO[i, "dLe"] <-          wetlands_temp.shp$dist2NearWet[i]
+    giw.INFO[i, "dL"] <-           wetlands_temp.shp$dist2NearWet[i]*1000
+    giw.INFO[i, "dLe"] <-         200*1000
   }
   
   # 2d. Populate land.INFO table~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -236,16 +236,20 @@ fun<-function(WetID){                                                       # cr
 
   
   # 2e. Populate lumped.INFO table~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+<<<<<<< HEAD
   lumped.INFO<-c("r_w","dL","dLe") #geometric characteristics
+=======
+  lumped.INFO<-c("r_w","dL", "dLe") #geometric characteristics
+>>>>>>> ebf27720300b192d56f49e7363af97274e52e9c7
   
   # Create lumped.INFO matrix
   lumped.INFO<-matrix(0, nrow=length(wetlands.shp$WetID), ncol=3, dimnames = list(c(1:length(wetlands.shp$WetID)), c(lumped.INFO)))
   
   # Populate lumped.INFO matrix (length in mm); data for the wetlands in the lumped upland
-  lumped.INFO[, "dL"] <- wetlands.shp$dist2NearWet                  # also convert from m to mm
+  lumped.INFO[, "dL"] <- wetlands.shp$dist2NearWet                  # 
   lumped.INFO[,"r_w"] <- (((wetlands.shp$SHAPE_Area) / pi) ^ 0.5 )  # derive radius from area assuming circular geometry, convert
-  lumped.INFO[,"dLe"] <- wetlands.shp$dist2NearWet                  # please change me!
-  lumped.INFO <- lumped.INFO *1000
+  lumped.INFO[,"dLe"] <- 200                 # please change me!
+  lumped.INFO <- lumped.INFO *1000           # convert entire matrix from m to mm
   
   # 2f. Run the model~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #Define the wetland
@@ -262,7 +266,7 @@ fun<-function(WetID){                                                       # cr
   #Name columns
   colnames(WHC)<-c(#GIW Info
     "giw.ID","WetID","area_watershed","area_wetland","invert",
-    "vol_ratio","n","s_fc","psi","y_cl" ,"y_c","s_wilt","k_sat","RD", "b","Sy", "y_w_0" , "s_t_0",
+    "vol_ratio", "dL", "dLe", "n","s_fc","psi","y_cl" ,"y_c","s_wilt","k_sat","RD", "b","Sy", "y_w_0" , "s_t_0",
     #Water Balance
     "precip","PET","ET","SW_out","SW_in","GW_out","GW_in", 
     #Normalized Flow
@@ -278,12 +282,21 @@ fun<-function(WetID){                                                       # cr
 ####################################################################################
 # Step 3: Run function -------------------------------------------------------------
 ####################################################################################
+# for testing
+plot(catchments.shp)
+plot(catchments.shp[53,1], col = 'red', add = T)
+
+catchments.shp <- catchments.shp[53,]
+wetlands.shp <- wetlands.shp[catchments.shp,]
+
+plot(wetlands.shp, add = T)
+
 #----------------------------------------------------------------------------------
 #Run function using SLURM server!
 #Try running on server
 sopts <- list(partition = "sesync")
 params<-data.frame(WetID=wetlands.shp$WetID)
-delmarva<- slurm_apply(fun, params,
+delmarva3<- slurm_apply(fun, params,
                       add_objects = c(
                         #Functions
                         "wetland.hydrology",
@@ -297,7 +310,7 @@ delmarva<- slurm_apply(fun, params,
                       slurm_options = sopts)
 
 # Check job status and collect results
-print_job_status(delmarva)
+print_job_status(delmarva3)
 save.image("results_intermediate.RData")
 
 #------------------------------------------------------------------------
@@ -307,10 +320,10 @@ load("results_intermediate.RData")
 
 #Get job
 #delmarva<-slurm_job(jobname = "3a9025fe1fbb",nodes=4,jobid=291519)
-results <- get_slurm_out(delmarva, outtype = "table")
+results <- get_slurm_out(delmarva3, outtype = "table")
 write.csv(results, "results.csv")
 save.image("results.RData")
-cleanup_files(delmarva)
+cleanup_files(delmarva2)
 
 ####################################################################################
 # Step 4: Plot-------- -------------------------------------------------------------
