@@ -78,7 +78,7 @@ source("~/Wetland_Hydrologic_Capacitance_Model/R/get_yc.R")                 # co
 
 # 2.2 Create function to process data and run WHC for a wetland of interest~~~~~~~~~
 fun<-function(WetID){ #
-  
+  n.years<-1000 
   # 2.2.1 Gather Required Data~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # 2.2.1a Identify wetland of interest
   main_wetland.shp<-wetlands.shp[wetlands.shp$WetID==WetID,]
@@ -254,7 +254,7 @@ fun<-function(WetID){ #
   giw.ID<-giw.INFO[,"giw.ID"][giw.INFO[,"WetID"]==main_wetland]
   
   # 2.2.6b Create function to execute WHC and organize output terms
-  n.years<-1000
+  n.years<-10
   execute<-function(n.years){
     #i. Run WHC Model w/ tryCatch
     output<-tryCatch(wetland.hydrology(giw.INFO,land.INFO, lumped.INFO, precip.VAR, pet.VAR, n.years, area, volume, giw.ID),
@@ -281,7 +281,7 @@ fun<-function(WetID){ #
                                 GW_in=sum(SW_GW[SW_GW>0])/giw.INFO[,"area_wetland"]/1000)
       
       #Calculate mean water level for each calander day
-      hydrograph<-data.frame(day=rep(seq(1,365),1000), y_w=y_w.VAR[1:365000,3])
+      hydrograph<-data.frame(day=rep(seq(1,365),1000), y_w=y_w.VAR[1:n.years*365,3])
       hydrograph$y_w<- hydrograph$y_w + abs(giw.INFO[,"invert"])
       hydrograph$y_w<-ifelse(hydrograph$y_w>0, 
                              hydrograph$y_w/abs(giw.INFO[,"invert"]), 
@@ -296,7 +296,7 @@ fun<-function(WetID){ #
   }
   
   # 2.2.6c Run function
-  WHC<-execute(1000)
+  WHC<-execute(n.years)
   
   # 2.2.6d Name columns
   colnames(WHC)<-c(
