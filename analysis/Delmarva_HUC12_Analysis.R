@@ -187,6 +187,7 @@ results<-results[results$WetID!=0,]
 results<-results[!duplicated(results[,1]),]
 
 #merge with wetlands.shp
+wetlands.shp<-wetlands.shp[(wetlands.shp$WetID %in% results$WetID),]
 wetlands.shp@data<-merge(wetlands.shp@data, results, by="WetID")
 
 # 2.3 Create function to process data and run WHC for a wetland of interest~~~~~~~~~
@@ -313,7 +314,7 @@ fun<-function(WetID){ #
     giw.INFO[i,"s_t_0"]<-          giw.INFO[i,"s_fc"]
     giw.INFO[i,"vol_ratio"]<-      temp_fac                                   # ratio of upstream wetland volume
     giw.INFO[i, "dL"] <-           wetlands_temp.shp$dist2NearWet[i]*1000
-    giw.INFO[i, "dLe"] <-          200*1000
+    giw.INFO[i, "dLe"] <-          wetlands_temp.shp$dLe[i]*1000
     giw.INFO[i,"dz"]<-             dz
   }
   
@@ -366,15 +367,15 @@ fun<-function(WetID){ #
   # 2.3.5c Populate lumped.INFO matrix (length in mm); data for the wetlands in the lumped upland
   lumped.INFO[, "dL"] <- wetlands.shp$dist2NearWet                  # 
   lumped.INFO[,"r_w"] <- (((wetlands.shp$SHAPE_Area) / pi) ^ 0.5 )  # derive radius from area assuming circular geometry, convert
-  lumped.INFO[,"dLe"] <- 200                 # please change me!
-  lumped.INFO <- lumped.INFO *1000           # convert entire matrix from m to mm
+  lumped.INFO[,"dLe"] <- wetlands.shp$dLe                           #
+  lumped.INFO <- lumped.INFO *1000                                  # convert entire matrix from m to mm
   
   # 2.3.6 Run the model~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # 2.3.6a Define the wetland
   giw.ID<-giw.INFO[,"giw.ID"][giw.INFO[,"WetID"]==main_wetland]
   
   # 2.3.6b Create function to execute WHC and organize output terms
-  n.years<-10
+  n.years<-1000
   execute<-function(n.years){
     #i. Run WHC Model w/ tryCatch
     output<-tryCatch(wetland.hydrology(giw.INFO,land.INFO, lumped.INFO, precip.VAR, pet.VAR, n.years, area, volume, giw.ID),
@@ -435,6 +436,9 @@ fun<-function(WetID){ #
   WHC
 }
 
+# 2.4 Save output
+save.image("backup/Model_Setup.Rdata")  
+
 ####################################################################################
 # Step 3: Run function -------------------------------------------------------------
 ####################################################################################
@@ -447,12 +451,17 @@ wetlands.shp <- wetlands.shp[catchments.shp,]
 
 plot(wetlands.shp, add = T)
 
-#----------------------------------------------------------------------------------
-#Run function using SLURM server!
-#Try running on server
-sopts <- list(partition = "sesynctest")
-params<-data.frame(WetID=wetlands.shp$WetID)
-delmarva3<- slurm_apply(fun, params,
+# 3.1 Set Up workspace ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+remove(list=ls())                                                           # clear environment
+wd<-"//nfs/WHC-data/Regional_Analysis/Delmarva"                             # Define working directory for later reference
+setwd(wd)                                                                   # Set working directory
+load("backup/Model_Setup.Rdata")                                            # load inputs from previous processing
+
+# 3.2 Run the Model ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+t0<-Sys.time()
+sopts <- list(partition = "sesync", time = "12:00:00" )
+params<-data.frame(WetID=wetlands.shp$WetID[1:64])
+delmarva<- slurm_apply(fun, params,
                         add_objects = c(
                           #Functions
                           "wetland.hydrology",
@@ -461,25 +470,23 @@ delmarva3<- slurm_apply(fun, params,
                           "soils.shp","wetlands.shp","dem.grd",
                           #Climate data
                           "precip.VAR", "pet.VAR"),
-                        nodes = 2, cpus_per_node=8,
+                        nodes = 8, cpus_per_node=8,
                         pkgs=c('sp','raster','rgdal','rgeos','dplyr'),
                         slurm_options = sopts)
 
 # Check job status and collect results
-print_job_status(delmarva3)
-save.image("results_intermediate.RData")
+print_job_status(delmarva)
 
-#------------------------------------------------------------------------
-#Load data
-remove(list=ls())
-load("results_intermediate.RData")
-
-#Get job
+# Retrieve results
 #delmarva<-slurm_job(jobname = "3a9025fe1fbb",nodes=4,jobid=291519)
-results <- get_slurm_out(delmarva3, outtype = "table")
+results <- get_slurm_out(delmarva, outtype = "table")
+tf<-Sys.time()
+tf-t0
+
+
 write.csv(results, "results.csv")
 save.image("results.RData")
-cleanup_files(delmarva2)
+cleanup_files(delmarva)
 
 ####################################################################################
 # Step 4: Plot-------- -------------------------------------------------------------
