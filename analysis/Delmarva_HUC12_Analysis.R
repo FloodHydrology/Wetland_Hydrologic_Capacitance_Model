@@ -28,36 +28,39 @@ setwd(wd)                                                                   # Se
 # Download Model Inputs (and put everything in a uniform projection)
 load("inputs/climate.Rdata")                                                # Climate data from Delmarva_HUC12_Climate_Data
 wetlands.shp<-readOGR("inputs/.","NWI")                                     # Import wetland shapefile
-    wetlands.shp@data$WetID<-seq(1,length(wetlands.shp))                    # add (?) WetID column to shp file using sequence from 1:total num of wetlands
+wetlands.shp@data$WetID<-seq(1,length(wetlands.shp))                    # add (?) WetID column to shp file using sequence from 1:total num of wetlands
 HUC12.shp<-readOGR("inputs/.","HUC12")                                      # Import HUC 12 shapefile
-    HUC12.shp<-spTransform(HUC12.shp, wetlands.shp@proj4string)             # transform HUC 12 shapefile's projection into same as wetlands
+HUC12.shp<-spTransform(HUC12.shp, wetlands.shp@proj4string)             # transform HUC 12 shapefile's projection into same as wetlands
 catchments.shp<-readOGR("inputs/.","NHD_catchments")                        # import NHD catchments
-    catchments.shp<-spTransform(catchments.shp, wetlands.shp@proj4string)   # transform NHD catchment's projection into same as wetlands
+catchments.shp<-spTransform(catchments.shp, wetlands.shp@proj4string)   # transform NHD catchment's projection into same as wetlands
 flowlines.shp<-readOGR("inputs/.","NHDplus")                                # import NHD flowlines
-    flowlines.shp<-spTransform(flowlines.shp, wetlands.shp@proj4string)     # transform NHD flowline's projection into same as wetlands
+flowlines.shp<-spTransform(flowlines.shp, wetlands.shp@proj4string)     # transform NHD flowline's projection into same as wetlands
 fac.grd<-raster("inputs/fac")                                               # import flow accumulation raster
 soils.shp<-readOGR("inputs/.","soils")                                      # import soils shapefile
-    soils.shp<-spTransform(soils.shp, wetlands.shp@proj4string)             # transform soil file's projection into same as wetlands
-    soils<-read.csv("inputs/WHC_Soils_Input.csv")                           # import existing soil parameters csv
-    soils.shp@data<-merge(soils.shp@data,soils, by.x='MUKEY', by.y="MUID")  # append soils csv data into soils shapefile by matching MUKEY and MUID
-    remove(soils)                                                           # delete soils df
+soils.shp<-spTransform(soils.shp, wetlands.shp@proj4string)             # transform soil file's projection into same as wetlands
+soils<-read.csv("inputs/WHC_Soils_Input.csv")                           # import existing soil parameters csv
+soils.shp@data<-merge(soils.shp@data,soils, by.x='MUKEY', by.y="MUID")  # append soils csv data into soils shapefile by matching MUKEY and MUID
+remove(soils)                                                           # delete soils df
 dem.grd<-raster("inputs/NHDPlus02/Elev_Unit_a/elev_cm")                     # import DEM file
-    mask<-spTransform(catchments.shp, dem.grd@crs)                          # transform file's projection
-    dem.grd<-crop(dem.grd, mask)                                            # crop out portion of dem to keep relevant areas only
-    remove(mask)                                                            # remove dummy variable mask
-    dem.grd<-projectRaster(dem.grd, crs=catchments.shp@proj4string)         # project raster
+mask<-spTransform(catchments.shp, dem.grd@crs)                          # transform file's projection
+dem.grd<-crop(dem.grd, mask)                                            # crop out portion of dem to keep relevant areas only
+remove(mask)                                                            # remove dummy variable mask
+dem.grd<-projectRaster(dem.grd, crs=catchments.shp@proj4string)         # project raster
+nfw_centroid.shp<-readOGR("inputs/.","NFW_centroids")                       # NFW from Lane and D'Amico 2016
+nfw_centroid.shp<-spTransform(nfw_centroid.shp, wetlands.shp@proj4string)
 
-# 1e. Delineate "Isolated" Wetlands  (e.g. atleast 1000 ft from the stream) ~~~~~~~~~~~
+# 1e. Delineate "Isolated" Wetlands  (Use NFW from Lane and D'Amico 2016) ~~~~~~~~~~~~~
 wetlands.shp$dist2stream<-apply(gDistance(flowlines.shp,wetlands.shp, byid=TRUE),1,min) # Calculate euclidean distance to stream network
-wetlands.shp<-wetlands.shp[wetlands.shp$dist2stream>304.8,]                             # Remove wetlands <1000 ft from stream
 wetlands.shp$area_m2<-gArea(wetlands.shp,byid=T)                                        # Caclculate wetland area
-    
+wetlands.shp<-wetlands.shp[nfw_centroid.shp,]
+
+
 # 1f. Alternate distances ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 wetlandCentroid <- centroid(wetlands.shp)                                   # get centroid of each wetland
 distMat <- pointDistance(wetlandCentroid, lonlat = FALSE)                   # get the distances to each other point
 diag(distMat) <- NA                                                         # replace the diagonal's zeros with NAs
 wetlands.shp$dist2NearWet <- apply(distMat, 1, min, na.rm=TRUE)/2           # put the half distances into variable
-    
+
 # 1g. Plot for funzies ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 plot(HUC12.shp, lwd=2, border="grey10")                                     # plot overall HUC12 outline 
 plot(catchments.shp, lwd=0.5, border="grey50", add=T)                       # plot interior catchments
@@ -65,26 +68,136 @@ plot(flowlines.shp, lwd=0.5, col="dark blue", add=T)                        # pl
 plot(wetlands.shp, col="dark blue", add=T)                                  # plot wetlands
 
 # 1h. Save Image ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-save.image("Inputs.Rdata")                                                  # save workspace for use later
+save.image("backup/Inputs.Rdata")                                           # save workspace for use later
 
 ####################################################################################
 # Step 2: Create Function to run individual wetlands--------------------------------
 ####################################################################################
 # 2.1 Set Up workspace ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 remove(list=ls())                                                           # clear environment
-load("Inputs.Rdata")                                                        # load inputs from previous processing
+wd<-"//nfs/WHC-data/Regional_Analysis/Delmarva"                             # Define working directory for later reference
+setwd(wd)                                                                   # Set working directory
+load("backup/Inputs.Rdata")                                                 # load inputs from previous processing
 source("~/Wetland_Hydrologic_Capacitance_Model/R/WHC_2.R")                  # compile WHC function 
 source("~/Wetland_Hydrologic_Capacitance_Model/R/get_yc.R")                 # compile yc 
 
-# 2.2 Create function to process data and run WHC for a wetland of interest~~~~~~~~~
+# 2.2 Calculate flowpath lengths for individual wetlands~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# 2.2.1 Create function to cacluate distance from wetland edge to "groundwater inflection" point
+divide_dist.fun<-function(cat){
+  
+  #a. Identify catchment of interest
+  cat.shp<-catchments.shp[cat,]
+  
+  #b. Break catchment into 100 equally spaced points
+  cat.grd<-raster(cat.shp)
+  extent(cat.grd)<-extent(cat.shp)
+  cellsize<-2*pi*((gArea(cat.shp)/pi)^.5)/100 #paremeter/1000
+  res(cat.grd)<-c(cellsize,cellsize)
+  cat.grd<-rasterize(cat.shp, cat.grd, 1)
+  cat.grd<-boundaries(cat.grd, type="inner")
+  cat.grd[cat.grd==0]<-NA
+  cat.pnt<-rasterToPoints(cat.grd)
+  cat.pnt<-SpatialPoints(cat.pnt)
+  
+  #c. Clip relevant wetlands
+  wetlands.shp<-wetlands.shp[cat.shp,]
+  
+  #d. Create inner function to define median distance for each wetland
+  fun<-function(WetID){
+    
+    #i. wetland of interest centroid
+    ind_cent<-data.frame(centroid(wetlands.shp[wetlands.shp$WetID==WetID,]))
+    colnames(ind_cent)<-c("x","y")
+    ind_pnt<-ind_cent
+    coordinates(ind_cent) <- ~x + y 
+    ind_cent<-SpatialPoints(ind_cent)
+    
+    #ii. All centroids
+    wet_cent<-data.frame(centroid(wetlands.shp))
+    colnames(wet_cent)<-c("x","y")
+    coordinates(wet_cent) <- ~x + y 
+    wet_cent<-SpatialPoints(wet_cent)
+    
+    #iii. Calculate distances between wetlands
+    wetlands.shp@data$dist2wet<-c(gDistance(ind_cent, wet_cent, byid=T))
+    wetlands.shp<-wetlands.shp[rank(wetlands.shp$dist2wet)>1,]
+    
+    #iii. Calculate the dLe for each wetland
+    wetlands.shp$dLe<-0
+    for(i in 1:length(wetlands.shp$dist2wet)){
+      #Create line between centroid
+      flowpath <- data.frame(centroid(wetlands.shp[i,]))
+      colnames(flowpath)<-c("x","y")
+      flowpath<-rbind(flowpath, ind_pnt)
+      coordinates(flowpath) <- ~x + y 
+      flowpath.shp<-SpatialPoints(flowpath)
+      flowpath.shp<-SpatialLines(list(Lines(Line(flowpath.shp), ID="a")))
+      
+      #Clip based on area wetlands
+      flowpath.shp<-gDifference(flowpath.shp, wetlands.shp)
+      
+      #Calculate length
+      if(length(flowpath.shp)==0){
+        dLe<-0
+      }else{
+        dLe<-gLength(flowpath.shp)/2
+      }
+      
+      #Define "delta' distance
+      wetlands.shp$dLe[i]<-dLe
+    }
+    
+    #iv. Deterimine length to polygon boundary
+    watershed_boundary<-min(gDistance(ind_cent,cat.pnt, byid=T))/2
+    
+    #v. Export dLe
+    c(WetID,median(c(wetlands.shp$dLe, watershed_boundary), na.rm=T))
+  }
+  
+  #e. Run function (if there are enough wetlands)
+  if(length(wetlands.shp)>1){
+    
+    #run inner function for each wetland
+    output<-lapply(wetlands.shp$WetID, fun)
+    output<-do.call(rbind, output)
+    
+    #Export output
+    output
+  }else{
+    c(0,0)
+  }
+}
+
+# 2.2.2 Run on the slurm server
+sopts <- list(partition = "sesync", time= "1:00:00")
+params<-data.frame(cat=seq(1,length(catchments.shp)))
+flowpath_job<- slurm_apply(divide_dist.fun, params,
+                           add_objects = c("catchments.shp","wetlands.shp"),
+                           nodes = 2, cpus_per_node=8,
+                           pkgs=c('sp','raster','rgdal','rgeos','geosphere'),
+                           slurm_options = sopts)
+results <- get_slurm_out(flowpath_job, outtype = "table")
+cleanup_files(flowpath_job)
+
+# 2.2.3 collect results and clean output
+#Print results and clean
+results<-data.frame(results)
+colnames(results)<-c("WetID","dLe")
+results<-results[results$WetID!=0,]
+results<-results[!duplicated(results[,1]),]
+
+#merge with wetlands.shp
+wetlands.shp@data<-merge(wetlands.shp@data, results, by="WetID")
+
+# 2.3 Create function to process data and run WHC for a wetland of interest~~~~~~~~~
 fun<-function(WetID){ #
-  n.years<-1000 
-  # 2.2.1 Gather Required Data~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # 2.2.1a Identify wetland of interest
+  
+  # 2.3.1 Gather Required Data~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # 2.3.1a Identify wetland of interest
   main_wetland.shp<-wetlands.shp[wetlands.shp$WetID==WetID,]
   main_wetland<-WetID
   
-  # 2.2.1b Select spatial layers based on WetID  
+  # 2.3.1b Select spatial layers based on WetID  
   catchment_temp.shp<-catchments.shp[main_wetland.shp,]
   if(length(catchment_temp.shp)>1){catchment_temp.shp<-catchment_temp.shp[1,]}
   wetlands_temp.shp<-wetlands.shp[catchment_temp.shp,]
@@ -96,7 +209,7 @@ fun<-function(WetID){ #
   fac_temp.grd<-crop(fac.grd, catchment_temp.shp)
   fac_temp.grd<-mask(fac_temp.grd, catchment_temp.shp)
   
-  # 2.2.1c For now, add catchment aggregate soils data to soils with missing data
+  # 2.3.1c For now, add catchment aggregate soils data to soils with missing data
   soils_temp.shp@data$y_cl[is.na(soils_temp.shp@data$y_cl)]<-mean(soils_temp.shp@data$y_cl, na.rm=T)
   soils_temp.shp@data$y_rd[is.na(soils_temp.shp@data$y_rd)]<-mean(soils_temp.shp@data$y_rd, na.rm=T)
   soils_temp.shp@data$s_fc[is.na(soils_temp.shp@data$s_fc)]<-mean(soils_temp.shp@data$s_fc, na.rm=T)
@@ -105,12 +218,12 @@ fun<-function(WetID){ #
   soils_temp.shp@data$clay[is.na(soils_temp.shp@data$clay)]<-mean(soils_temp.shp@data$clay, na.rm=T)
   soils_temp.shp@data$ksat[is.na(soils_temp.shp@data$ksat)]<-mean(soils_temp.shp@data$ksat, na.rm=T)
   
-  # 2.2.2 Estimate area and volume to stage relationships~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # 2.2.2a Create vectors to store area and volume to stage relationships
+  # 2.3.2 Estimate area and volume to stage relationships~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # 2.3.2a Create vectors to store area and volume to stage relationships
   area<-matrix(0, ncol=length(wetlands_temp.shp), nrow=100)
   volume<-matrix(0, ncol=length(wetlands_temp.shp), nrow=100)
   
-  # 2.2.2b Use loop to calculate based on previously published relationships
+  # 2.3.2b Use loop to calculate based on previously published relationships
   for(i in 1:length(wetlands_temp.shp)){
     #Define TempID
     TempID<-wetlands_temp.shp$WetID[i]
@@ -140,18 +253,18 @@ fun<-function(WetID){ #
     volume[(n.rows+1):100,n.col]<-volume.fun(hmax)
   }
   
-  # 2.2.3 Populate GIW.INFO Tables ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # 2.2.3a Create input variables
-  giw.INFO<-c("giw.ID","WetID","area_watershed","area_wetland","invert","vol_ratio", "dL", "dLe",  # geometric characteristics
-              "n","s_fc","psi","y_cl", "y_c", "s_wilt", "k_sat", "RD", "b", "Sy",                  # soil characteristics
-              "y_w_0", "s_t_0"                                                                     # initial conditions
+  # 2.3.3 Populate GIW.INFO Tables ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # 2.3.3a Create input variables
+  giw.INFO<-c("giw.ID","WetID","area_watershed","area_wetland","invert","vol_ratio", "dL", "dLe", "dz",  # geometric characteristics
+              "n","s_fc","psi","y_cl", "y_c", "s_wilt", "k_sat", "RD", "b", "Sy",                        # soil characteristics
+              "y_w_0", "s_t_0"                                                                           # initial conditions
   )
   
-  # 2.2.3b Create giw.INFO matrix
+  # 2.3.3b Create giw.INFO matrix
   giw.INFO<-matrix(0, nrow=length(wetlands_temp.shp), ncol=length(giw.INFO), 
                    dimnames = list(seq(1,length(wetlands_temp.shp)), c(giw.INFO)))
   
-  # 2.2.3c Define wetland variables (units == mm)
+  # 2.3.3c Define wetland variables (units == mm)
   for(i in 1:length(wetlands_temp.shp)){
     
     # i. Isolate soils data (if for osme reason we don't have ovlerlap, just use basin agregate)
@@ -173,6 +286,13 @@ fun<-function(WetID){ #
                      cellStats(temp_fac,max)/cellStats(fac_temp.grd,max),
                      0)
     
+    # v. Calculate relative wetland datum
+    dz<-cellStats(mask(dem_temp.grd, wetlands_temp.shp[i,]), median, na.rm=T)- #median elevation of wetland elevation
+      cellStats(mask(dem_temp.grd, wetlands_temp.shp[wetlands_temp.shp$WetID!=WetID,]), median, na.rm=T) #median elevation of all wetlands
+    dz<-ifelse(is.na(dz)==TRUE, 0, dz)
+    dz<-ifelse(dz==Inf, 0, dz)
+    dz<-dz*1000
+    
     # iv. Populate giw.INFO table
     giw.INFO[i,"giw.ID"]<-         i  #ID used in the model, note this is differnt than the WetID
     giw.INFO[i,"WetID"]<-          wetlands_temp.shp$WetID[i]
@@ -193,11 +313,12 @@ fun<-function(WetID){ #
     giw.INFO[i,"s_t_0"]<-          giw.INFO[i,"s_fc"]
     giw.INFO[i,"vol_ratio"]<-      temp_fac                                   # ratio of upstream wetland volume
     giw.INFO[i, "dL"] <-           wetlands_temp.shp$dist2NearWet[i]*1000
-    giw.INFO[i, "dLe"] <-         200*1000
+    giw.INFO[i, "dLe"] <-          200*1000
+    giw.INFO[i,"dz"]<-             dz
   }
   
-  # 2.2.4 Populate land.INFO table~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # 2.2.4a Create Land Info Table
+  # 2.3.4 Populate land.INFO table~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # 2.3.4a Create Land Info Table
   land.INFO<-c("area","invert",                                              # geometric characteristics
                "n","s_fc","psi","y_cl", "y_c", "s_wilt", "k_sat", "RD", "b", # soil characteristics
                "slope", "kb",                                                # larger watershed charactersitics
@@ -206,16 +327,16 @@ fun<-function(WetID){ #
                "wetland_invert","wetland_area","volume_max"                  # lumped wetland information
   )
   
-  # 2.2.4b Create land.INFO matrix
+  # 2.3.4b Create land.INFO matrix
   land.INFO<-matrix(0, nrow=1, ncol=length(land.INFO), dimnames = list(c(1), c(land.INFO)))
   
-  # 2.2.4c Aggregate soils data by area
+  # 2.3.4c Aggregate soils data by area
   temp_soils<-soils_temp.shp
   temp_soils$area<-gArea(temp_soils, byid=T)
   temp_soils<-temp_soils@data
   temp_soils<-colSums(temp_soils[,c("y_cl","y_rd","s_fc","s_w","n","clay","ksat")]*temp_soils[,"area"])/sum(temp_soils$area, na.rm=T)
   
-  # 2.2.4d Populate land.INFO matrix (lenghth units in mm)
+  # 2.3.4d Populate land.INFO matrix (lenghth units in mm)
   land.INFO[,"area"]<-            gArea(catchment_temp.shp)*(10^6)            # area in mm^2
   land.INFO[,"n"]<-               temp_soils["n"]                             # porisity
   land.INFO[,"s_fc"]<-            temp_soils["s_fc"]/100                      # soil moisture at field capacity 
@@ -234,26 +355,25 @@ fun<-function(WetID){ #
   land.INFO[,"wetland_area"]<-    max(rowSums(area))*(1000^2) 
   land.INFO[,"volume_max"]<-      max(rowSums(volume))*(1000^3)
   land.INFO[,"kb"]<-              0.046                                         #Defined fromo literature. (Going to do with Gauge analysis eventually)
-
   
-  # 2.2.5 Populate lumped.INFO table~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # 2.2.5a #Create lumped.INFO table
+  # 2.3.5 Populate lumped.INFO table~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # 2.3.5a #Create lumped.INFO table
   lumped.INFO<-c("r_w","dL", "dLe") #geometric characteristics
   
-  # 2.2.5b Create lumped.INFO matrix
+  # 2.3.5b Create lumped.INFO matrix
   lumped.INFO<-matrix(0, nrow=length(wetlands.shp$WetID), ncol=3, dimnames = list(c(1:length(wetlands.shp$WetID)), c(lumped.INFO)))
   
-  # 2.2.5c Populate lumped.INFO matrix (length in mm); data for the wetlands in the lumped upland
+  # 2.3.5c Populate lumped.INFO matrix (length in mm); data for the wetlands in the lumped upland
   lumped.INFO[, "dL"] <- wetlands.shp$dist2NearWet                  # 
   lumped.INFO[,"r_w"] <- (((wetlands.shp$SHAPE_Area) / pi) ^ 0.5 )  # derive radius from area assuming circular geometry, convert
   lumped.INFO[,"dLe"] <- 200                 # please change me!
   lumped.INFO <- lumped.INFO *1000           # convert entire matrix from m to mm
   
-  # 2.2.6 Run the model~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # 2.2.6a Define the wetland
+  # 2.3.6 Run the model~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # 2.3.6a Define the wetland
   giw.ID<-giw.INFO[,"giw.ID"][giw.INFO[,"WetID"]==main_wetland]
   
-  # 2.2.6b Create function to execute WHC and organize output terms
+  # 2.3.6b Create function to execute WHC and organize output terms
   n.years<-10
   execute<-function(n.years){
     #i. Run WHC Model w/ tryCatch
@@ -295,10 +415,10 @@ fun<-function(WetID){ #
     }
   }
   
-  # 2.2.6c Run function
+  # 2.3.6c Run function
   WHC<-execute(n.years)
   
-  # 2.2.6d Name columns
+  # 2.3.6d Name columns
   colnames(WHC)<-c(
     #GIW Info
     "giw.ID","WetID","area_watershed","area_wetland","invert",
@@ -308,10 +428,10 @@ fun<-function(WetID){ #
     #Normalized Flow
     seq(1,365))
   
-  # 2.2.6e Add WetID info
+  # 2.3.6e Add WetID info
   WHC$WetID=main_wetland
   
-  # 2.2.6f Export WHC Results
+  # 2.3.6f Export WHC Results
   WHC
 }
 
@@ -330,20 +450,20 @@ plot(wetlands.shp, add = T)
 #----------------------------------------------------------------------------------
 #Run function using SLURM server!
 #Try running on server
-sopts <- list(partition = "sesync")
+sopts <- list(partition = "sesynctest")
 params<-data.frame(WetID=wetlands.shp$WetID)
 delmarva3<- slurm_apply(fun, params,
-                      add_objects = c(
-                        #Functions
-                        "wetland.hydrology",
-                        #Spatial data
-                        "fac.grd","catchments.shp","flowlines.shp",
-                        "soils.shp","wetlands.shp","dem.grd",
-                        #Climate data
-                        "precip.VAR", "pet.VAR"),
-                      nodes = 4, cpus_per_node=8,
-                      pkgs=c('sp','raster','rgdal','rgeos','dplyr'),
-                      slurm_options = sopts)
+                        add_objects = c(
+                          #Functions
+                          "wetland.hydrology",
+                          #Spatial data
+                          "fac.grd","catchments.shp","flowlines.shp",
+                          "soils.shp","wetlands.shp","dem.grd",
+                          #Climate data
+                          "precip.VAR", "pet.VAR"),
+                        nodes = 2, cpus_per_node=8,
+                        pkgs=c('sp','raster','rgdal','rgeos','dplyr'),
+                        slurm_options = sopts)
 
 # Check job status and collect results
 print_job_status(delmarva3)
@@ -390,8 +510,8 @@ abline(h=0, lwd=2, lty=2)
 
 #Plot lines from individual wetlands
 for(i in 1:length(level[1,])){
-    points(level[,i], type="l",lwd=0.1, col="grey40")
- }
+  points(level[,i], type="l",lwd=0.1, col="grey40")
+}
 points(rowMeans(level), type="l", col="black", lwd=4)
 
 #Plot relevant fluxes~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

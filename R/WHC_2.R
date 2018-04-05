@@ -132,7 +132,6 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
     "s_ex",       #volumetric water content excess of s_fc
     "s_lim",      #volumetric water content with limit of s_fc
     "ET_lm",      #ET in the low moisture zone
-    "dl",         #flowpath length for Q_local in lumped module
     "dh",         #change in head between water table and wetland surface water
     "Ax",         #surface area of GW-Wetland boundary (mm^2)
     "As",         #surface area of lumped wetlands (mm^2)
@@ -228,15 +227,11 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
     Ax.VAR[day, wet.VAR]<<-2*pi*((giw.INFO[wet.INFO,"area_wetland"]/pi)^0.5)*(y_w.VAR[day,wet.VAR]-giw.INFO[wet.INFO,"y_cl"])
     if((y_w.VAR[day, wet.VAR]-y_wt.VAR[day,1])==0 | day==1){
       GW_local.VAR[day,wet.VAR]<<- 0
-    }else{  #note r_a is the area of the effective aquifer 
-      #r_w<-(giw.INFO[,"area_wetland"]/pi)^0.5           # original
-      # r_ws<-(giw.INFO[,"area_watershed"]/pi)^0.5       # original
-      r_w <-   (stage2area_giw.fun(vol2stage_giw.fun(V_w.VAR[day, wet.VAR]))/pi)^0.5     # convert volume to stage, then to area, then to radius
+    }else{  
+      r_w <-  (stage2area_giw.fun(vol2stage_giw.fun(V_w.VAR[day, wet.VAR]))/pi)^0.5    
       r_ws <- giw.INFO[wet.INFO, "dLe"] + r_w
-      #r_ws <- giw.INFO[wet.INFO,"dL"]                # temp fix if no dLe
-      f1<-function(x) pi*giw.INFO[wet.INFO,"k_sat"]*((y_wt.VAR[day, 1]^2)-(y_w.VAR[day, wet.VAR]^2))/log(x/r_w)
-      #We need to reconceptualise r_ws length
-      GW_local.VAR[day,wet.VAR]<<- f1((r_ws))
+      y_w<-y_w.VAR[day, wet.VAR] + giw.INFO[wet.INFO, "dz"]
+      GW_local.VAR[day,wet.VAR]<<- pi*giw.INFO[wet.INFO,"k_sat"]*((y_wt.VAR[day, 1]^2)-(y_w^2))/log(r_ws/r_w)
     }
     
     #Adjust for differences in elevation
@@ -276,11 +271,6 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
     As.VAR[day,"wetland"]<<-stage2area.fun(y_w.VAR[day,"wetland"])
     
     #Calculate GW_local (mm^3, assume water flowing out of the wetland is +)
-    #Ax.VAR[day,"wetland"]<<-2*pi*((As.VAR[day,"wetland"]/pi)^0.5)*(y_w.VAR[day,"wetland"]-land.INFO[,"wetland_invert"])
-    #dh.VAR[day,"wetland"]<<-y_wt.VAR[day,"land"]-y_w.VAR[day,"wetland"]
-    #dl.VAR[day,"wetland"]<<-(land.INFO[,"area"]/pi)^0.5-(As.VAR[day,"wetland"]/pi)^0.5 #r_watershed-r_wetland
-    #GW_local.VAR[day,"wetland"]<<-land.INFO[,"k_sat"]*Ax.VAR[day,"wetland"]*dh.VAR[day,"wetland"]/ dl.VAR[day,"wetland"]
-  
     GW_local_mat <- pi*land.INFO[,"k_sat"]*((y_wt.VAR[day, "land"]^2)-(y_w.VAR[day, "wetland"]^2)) /log(lumped.INFO[,'dLe'] + lumped.INFO[, 'r_w']/lumped.INFO[,"r_w"])
     GW_local.VAR[day, "wetland"] <<- sum(GW_local_mat)
     
@@ -383,7 +373,6 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
     if((y_wt.VAR[day,"land"]+dy_wt.VAR[day,"land"])>0){
       runoff_vol.VAR[day+1,"land"]<<-((y_wt.VAR[day,"land"]+dy_wt.VAR[day,"land"]))*(land.INFO[,"area"]-land.INFO[,"wetland_area"])
       y_wt.VAR[day+1,"land"]<<-0
-      #y_w.VAR[day+1,2:(n.wetlands+1)]<-y_w.VAR[day+1,2:(n.wetlands+1)]+(y_wt.VAR[day,"land"]+dy_wt.VAR[day,"land"])*(sum(giw.INFO[,"area_wetland"])/(land.INFO[,"area"]-sum(giw.INFO[,"area_wetland"])))
     }else{
       if((y_wt.VAR[day,"land"]+dy_wt.VAR[day,"land"])<land.INFO[,"y_cl"]){
         y_wt.VAR[day+1,"land"]<<-land.INFO[,"y_cl"]
