@@ -375,7 +375,7 @@ fun<-function(WetID){ #
   giw.ID<-giw.INFO[,"giw.ID"][giw.INFO[,"WetID"]==main_wetland]
   
   # 2.3.6b Create function to execute WHC and organize output terms
-  n.years<-1000
+  n.years<-10
   execute<-function(n.years){
     #i. Run WHC Model w/ tryCatch
     output<-tryCatch(wetland.hydrology(giw.INFO,land.INFO, lumped.INFO, precip.VAR, pet.VAR, n.years, area, volume, giw.ID),
@@ -402,7 +402,7 @@ fun<-function(WetID){ #
                                 GW_in=sum(SW_GW[SW_GW>0])/giw.INFO[,"area_wetland"]/1000)
       
       #Calculate mean water level for each calander day
-      hydrograph<-data.frame(day=rep(seq(1,365),1000), y_w=y_w.VAR[1:n.years*365,3])
+      hydrograph<-data.frame(day=rep(seq(1,365),1000), y_w=y_w.VAR[1:(n.years*365),3])
       hydrograph$y_w<- hydrograph$y_w + abs(giw.INFO[,"invert"])
       hydrograph$y_w<-ifelse(hydrograph$y_w>0, 
                              hydrograph$y_w/abs(giw.INFO[,"invert"]), 
@@ -423,7 +423,7 @@ fun<-function(WetID){ #
   colnames(WHC)<-c(
     #GIW Info
     "giw.ID","WetID","area_watershed","area_wetland","invert",
-    "vol_ratio", "dL", "dLe", "n","s_fc","psi","y_cl" ,"y_c","s_wilt","k_sat","RD", "b","Sy", "y_w_0" , "s_t_0",
+    "vol_ratio", "dL", "dLe", "dz","n","s_fc","psi","y_cl" ,"y_c","s_wilt","k_sat","RD", "b","Sy", "y_w_0" , "s_t_0",
     #Water Balance
     "precip","PET","ET","SW_out","SW_in","GW_out","GW_in", 
     #Normalized Flow
@@ -442,15 +442,6 @@ save.image("backup/Model_Setup.Rdata")
 ####################################################################################
 # Step 3: Run function -------------------------------------------------------------
 ####################################################################################
-# for testing
-plot(catchments.shp)
-plot(catchments.shp[53,1], col = 'red', add = T)
-
-catchments.shp <- catchments.shp[53,]
-wetlands.shp <- wetlands.shp[catchments.shp,]
-
-plot(wetlands.shp, add = T)
-
 # 3.1 Set Up workspace ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 remove(list=ls())                                                           # clear environment
 wd<-"//nfs/WHC-data/Regional_Analysis/Delmarva"                             # Define working directory for later reference
@@ -474,30 +465,29 @@ delmarva<- slurm_apply(fun, params,
                         pkgs=c('sp','raster','rgdal','rgeos','dplyr'),
                         slurm_options = sopts)
 
-# Check job status and collect results
+# 3.3 Check job status and collect results
 print_job_status(delmarva)
 
-# Retrieve results
-#delmarva<-slurm_job(jobname = "3a9025fe1fbb",nodes=4,jobid=291519)
+# 3.4 Retrieve results
 results <- get_slurm_out(delmarva, outtype = "table")
+cleanup_files(delmarva)
 tf<-Sys.time()
 tf-t0
 
-
+#Export results
 write.csv(results, "results.csv")
-save.image("results.RData")
-cleanup_files(delmarva)
+save.image("backup/results.RData")
 
 ####################################################################################
 # Step 4: Plot-------- -------------------------------------------------------------
 ####################################################################################
 #Setup workspace
 remove(list=ls())
-load("results.Rdata")
+load("backup/results.Rdata")
 
 #Plot time series of wetland water level~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Transform data
-level<-data.frame(t(results[,26:390]))
+level<-data.frame(t(results[,29:393]))
 
 #Setup Plotting space
 par(mar=c(3.1,3.5,0.35,0.35))

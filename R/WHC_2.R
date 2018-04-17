@@ -65,7 +65,7 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
     
     #Estimate Surface Storage~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if(y>giw.INFO[,"invert"]){
-      subsurface_vol<-temp$volume[which(abs(temp$stage-giw.INFO[,"invert"])==min(abs(temp$stage-giw.INFO[,"invert"])))]
+      subsurface_vol<-vol_giw.INFO[vol_giw.INFO[,"stage"]==giw.INFO[,"invert"],2][1]
       vol_giw.INFO[i,"vol_mm^3"]<-temp$volume[which(abs(temp$stage-y)==min(abs(temp$stage-y)))]+subsurface_vol
     }
   }
@@ -73,15 +73,13 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
   #Create interpolation functions
   stage2vol_giw.fun<-approxfun(vol_giw.INFO[,1], vol_giw.INFO[,2])
   vol2stage_giw.fun<-approxfun(vol_giw.INFO[,2], vol_giw.INFO[,1])
-
-  #TEMPRORARY FIX
   stage2area_giw.fun<-approxfun(c(c(giw.INFO[,"y_cl"]),seq(to=0,from=giw.INFO[,"invert"], by=50)),
                                 c(0,area[,giw.ID][area[,giw.ID]!=max(area[,giw.ID])], max(area[,giw.ID]))
                                 )
 
   
   #Create relationship for upland module~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #Note, this is only for the surface water component
+    #Note, this is only for the surface water component
   #Remove individual GIW from volume and area df
   volume<-volume[,-giw.ID]
   area<-area[,-giw.ID]
