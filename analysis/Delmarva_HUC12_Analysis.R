@@ -173,7 +173,7 @@ sopts <- list(partition = "sesync", time= "1:00:00")
 params<-data.frame(cat=seq(1,length(catchments.shp)))
 flowpath_job<- slurm_apply(divide_dist.fun, params,
                            add_objects = c("catchments.shp","wetlands.shp"),
-                           nodes = 2, cpus_per_node=8,
+                           nodes = 8, cpus_per_node=8,
                            pkgs=c('sp','raster','rgdal','rgeos','geosphere'),
                            slurm_options = sopts)
 results <- get_slurm_out(flowpath_job, outtype = "table")
@@ -451,7 +451,7 @@ load("backup/Model_Setup.Rdata")                                            # lo
 # 3.2 Run the Model ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 t0<-Sys.time()
 sopts <- list(partition = "sesync", time = "12:00:00" )
-params<-data.frame(WetID=wetlands.shp$WetID[1:64])
+params<-data.frame(WetID=wetlands.shp$WetID)
 delmarva<- slurm_apply(fun, params,
                         add_objects = c(
                           #Functions
@@ -498,7 +498,7 @@ par(cex.lab=14/12)
 
 #start plot
 plot(level[,1], type="n", 
-     ylim=c(-0.5,0.5), ylab = "Normalized Water Level [m/m]", 
+     ylim=c(-0.5,1), ylab = "Normalized Water Level [m/m]", 
      xlab="Julian Day"
 )
 
@@ -512,9 +512,14 @@ for(i in 1:length(level[1,])){
 points(rowMeans(level), type="l", col="black", lwd=4)
 
 #Plot relevant fluxes~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+df<-data.frame(SW_out = results$SW_out-results$SW_in,
+               GW_out = results$GW_out,
+               GW_in =  results$GW_in)
+df<-df/results$precip
+
 #Correct Data
-results<-results[results$GW_out>-1000,]
-results$GW_out<-abs(results$GW_out)
+df<-df[df$GW_out>-1000,]
+df$GW_out<-abs(df$GW_out)
 
 
 #Setup Plotting space
@@ -525,11 +530,10 @@ par(cex.axis=10/12)
 par(cex.lab=14/12)
 
 #Start Boxplot
-boxplot(results[,24:27]/results$precip, col="grey90", pch=19, outcol="#7f7f7f7D", cex=0.5,
-        ylim=c(0,6), ylab="Normalized Annual Flowpath Flux [mm/year]", 
-        names = c("SW Outflow","SW Inflow", "GW Outflow", "GW Inflow")
+boxplot(df, col="grey90", pch=19, outcol="#7f7f7f7D", cex=0.5, 
+        ylim=c(0,0.3),ylab="Normalized Annual Flowpath Flux [year]", 
+        names = c("Net SW Outflow","GW Outflow", "GW Inflow")
 )
-
 
 
 water_balance<-results$precip+results$SW_in+results$GW_in-results$ET-results$SW_out-results$GW_out
