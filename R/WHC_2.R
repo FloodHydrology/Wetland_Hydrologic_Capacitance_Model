@@ -85,21 +85,36 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
   area<-area[,-giw.ID]
   
   #Calculate Depth of wetland
-  depth<-0.05*(length(rowSums(area)[rowSums(area)!=max(rowSums(area), na.rm=T)])+1)
-  
-  #create dataframe of depth and surface area (in m)
-  area<-data.frame(c(0,rowSums(area[1:(depth/0.05),])), seq(-depth,0, 0.05))
-  colnames(area)<-c("area_m2","y_w")
-  
-  #create dataframe of depth and volume (in m)
-  volume<-data.frame(c(0,rowSums(volume[1:((depth/0.05)),])), seq(-depth,0, 0.05))
-  colnames(volume)<-c("volume_m3","y_w")
-  volume$volume_m3<-volume$volume_m3+volume$volume_m3[3]
-  
-  #create interpolation functions
-  stage2area.fun<-approxfun(area[,2]*1000, area[,1]*(1000^2))
-  stage2volume.fun<-approxfun(volume[,2]*1000, volume[,1]*(1000^3))
-  volume2stage.fun<-approxfun(volume[,1]*(1000^3),volume[,2]*1000, yleft = min(volume[,2]*1000), yright=max(volume[,2]*1000))
+  if(length(volume)!=100){
+    depth<-0.05*(length(rowSums(area)[rowSums(area)!=max(rowSums(area), na.rm=T)])+1)
+    
+    #create dataframe of depth and surface area (in m)
+    area<-data.frame(c(0,rowSums(area[1:(depth/0.05),])), seq(-depth,0, 0.05))
+    colnames(area)<-c("area_m2","y_w")
+    
+    #create dataframe of depth and volume (in m)
+    volume<-data.frame(c(0,rowSums(volume[1:((depth/0.05)),])), seq(-depth,0, 0.05))
+    colnames(volume)<-c("volume_m3","y_w")
+    #volume$volume_m3<-volume$volume_m3+volume$volume_m3[3]
+    
+    #create interpolation functions
+    stage2area.fun<-approxfun(area[,2]*1000, area[,1]*(1000^2))
+    stage2volume.fun<-approxfun(volume[,2]*1000, volume[,1]*(1000^3))
+    volume2stage.fun<-approxfun(volume[,1]*(1000^3),volume[,2]*1000, yleft = min(volume[,2]*1000), yright=max(volume[,2]*1000))
+  }else{
+    #Create Dataframe for depth and area
+    depth<-0.05*length(area[area!=max(area)]+1)
+    area<-data.frame(area_m2 = c(0,area[1:(depth/0.05)]), 
+                     y_w     = seq(-depth, 0, 0.05))
+    volume<-data.frame(volume_m3 = c(0,volume[1:((depth/0.05))]),
+                       y_w       = seq(-depth, 0, 0.05))
+    
+    #create interpolation functions
+    stage2area.fun<-approxfun(area[,2]*1000, area[,1]*(1000^2))
+    stage2volume.fun<-approxfun(volume[,2]*1000, volume[,1]*(1000^3))
+    volume2stage.fun<-approxfun(volume[,1]*(1000^3),volume[,2]*1000, yleft = min(volume[,2]*1000), yright=max(volume[,2]*1000))
+    
+  }
   
   ####################################################################################
   # Step 3: Create dynamic variables (.VAR)-------------------------------------------
@@ -227,6 +242,9 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
       GW_local.VAR[day,wet.VAR]<<- 0
     }else{  
       r_w <-  (stage2area_giw.fun(vol2stage_giw.fun(V_w.VAR[day, wet.VAR]))/pi)^0.5    
+      r_w <- ifelse(r_w==0, 
+                    (giw.INFO[,"area_wetland"]/pi)^0.5,
+                    r_w)
       r_ws <- giw.INFO[wet.INFO, "dLe"] + r_w
       y_w<-y_w.VAR[day, wet.VAR] + giw.INFO[wet.INFO, "dz"]
       GW_local.VAR[day,wet.VAR]<<- pi*giw.INFO[wet.INFO,"k_sat"]*((y_wt.VAR[day, 1]^2)-(y_w^2))/log(r_ws/r_w)

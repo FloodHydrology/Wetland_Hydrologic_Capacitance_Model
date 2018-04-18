@@ -362,12 +362,12 @@ fun<-function(WetID){ #
   lumped.INFO<-c("r_w","dL", "dLe") #geometric characteristics
   
   # 2.3.5b Create lumped.INFO matrix
-  lumped.INFO<-matrix(0, nrow=length(wetlands.shp$WetID), ncol=3, dimnames = list(c(1:length(wetlands.shp$WetID)), c(lumped.INFO)))
+  lumped.INFO<-matrix(0, nrow=length(wetlands_temp.shp$WetID), ncol=3, dimnames = list(c(1:length(wetlands_temp.shp$WetID)), c(lumped.INFO)))
   
   # 2.3.5c Populate lumped.INFO matrix (length in mm); data for the wetlands in the lumped upland
-  lumped.INFO[, "dL"] <- wetlands.shp$dist2NearWet                  # 
-  lumped.INFO[,"r_w"] <- (((wetlands.shp$SHAPE_Area) / pi) ^ 0.5 )  # derive radius from area assuming circular geometry, convert
-  lumped.INFO[,"dLe"] <- wetlands.shp$dLe                           #
+  lumped.INFO[, "dL"] <- wetlands_temp.shp$dist2NearWet                  # 
+  lumped.INFO[,"r_w"] <- (((wetlands_temp.shp$SHAPE_Area) / pi) ^ 0.5 )  # derive radius from area assuming circular geometry, convert
+  lumped.INFO[,"dLe"] <- wetlands_temp.shp$dLe                           #
   lumped.INFO <- lumped.INFO *1000                                  # convert entire matrix from m to mm
   
   # 2.3.6 Run the model~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -375,7 +375,7 @@ fun<-function(WetID){ #
   giw.ID<-giw.INFO[,"giw.ID"][giw.INFO[,"WetID"]==main_wetland]
   
   # 2.3.6b Create function to execute WHC and organize output terms
-  n.years<-10
+  n.years<-1000
   execute<-function(n.years){
     #i. Run WHC Model w/ tryCatch
     output<-tryCatch(wetland.hydrology(giw.INFO,land.INFO, lumped.INFO, precip.VAR, pet.VAR, n.years, area, volume, giw.ID),
