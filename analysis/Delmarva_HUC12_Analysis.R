@@ -350,7 +350,7 @@ fun<-function(WetID){ #
   land.INFO[,"b"]<-               12.524*(temp_soils["clay"]/100)+3.6907      # Presssure Head Power-Law Coefficient (b) --Relationship developed from Clapp and Hornberger, 1978
   land.INFO[,"y_wt_0"]<-          0
   land.INFO[,"s_t_0"]<-           land.INFO[,"s_fc"]
-  land.INFO[,"GW_bf_0"]<-         300
+  land.INFO[,"GW_bf_0"]<-         0
   land.INFO[,"Sy"]<-              land.INFO[,"n"]*(1-land.INFO[,"s_fc"])
   land.INFO[,"wetland_invert"]<-  -1000*0.05*(length(rowSums(area)[rowSums(area)!=max(rowSums(area), na.rm=T)])+1)
   land.INFO[,"wetland_area"]<-    max(rowSums(area))*(1000^2) 
@@ -411,8 +411,17 @@ fun<-function(WetID){ #
       y_w<-data.frame(t(hydrograph$y_w))
       colnames(y_w)<-hydrograph$day
       
+      #Estimate duration and magnitudes
+      duration<-data.frame(runoff_duration = length(runoff_vol.VAR[runoff_vol.VAR[,1]>0,])/1000,
+                            runoff_magnitude = sum(runoff_vol.VAR[runoff_vol.VAR[,3]>0,])/1000/giw.INFO[,"area_watershed"],
+                            sink_duration = length(SW_GW[SW_GW>0 & runoff_vol.VAR[,3]==0])/1000,
+                            sink_magnitude = sum(SW_GW[SW_GW>0 & runoff_vol.VAR[,3]==0])/1000/giw.INFO[,"area_watershed"],
+                            source_duration = length(SW_GW[SW_GW<0 & runoff_vol.VAR[,3]==0])/1000,
+                            source_magnitude = sum(SW_GW[SW_GW<0 & runoff_vol.VAR[,3]==0])/1000/giw.INFO[,"area_watershed"]*-1
+      )
+      
       #Combine data
-      output<-cbind(giw.INFO, water_balance, y_w)
+      output<-cbind(giw.INFO, water_balance, duration, y_w)
     }
   }
   
@@ -426,6 +435,8 @@ fun<-function(WetID){ #
     "vol_ratio", "dL", "dLe", "dz","n","s_fc","psi","y_cl" ,"y_c","s_wilt","k_sat","RD", "b","Sy", "y_w_0" , "s_t_0",
     #Water Balance
     "precip","PET","ET","SW_out","SW_in","GW_out","GW_in", 
+    #duration
+    "runoff_duration","runoff_magnitude","sink_duration","sink_magnitude","source_duration","source_magnitude",
     #Normalized Flow
     seq(1,365))
   
@@ -461,7 +472,7 @@ delmarva<- slurm_apply(fun, params,
                           "soils.shp","wetlands.shp","dem.grd",
                           #Climate data
                           "precip.VAR", "pet.VAR"),
-                        nodes = 8, cpus_per_node=8,
+                        nodes = 16, cpus_per_node=8,
                         pkgs=c('sp','raster','rgdal','rgeos','dplyr'),
                         slurm_options = sopts)
 
