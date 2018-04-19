@@ -412,12 +412,13 @@ fun<-function(WetID){ #
       colnames(y_w)<-hydrograph$day
       
       #Estimate duration and magnitudes
-      duration<-data.frame(runoff_duration = length(runoff_vol.VAR[runoff_vol.VAR[,1]>0,])/1000,
-                            runoff_magnitude = sum(runoff_vol.VAR[runoff_vol.VAR[,3]>0,])/1000/giw.INFO[,"area_watershed"],
-                            sink_duration = length(SW_GW[SW_GW>0 & runoff_vol.VAR[,3]==0])/1000,
-                            sink_magnitude = sum(SW_GW[SW_GW>0 & runoff_vol.VAR[,3]==0])/1000/giw.INFO[,"area_watershed"],
-                            source_duration = length(SW_GW[SW_GW<0 & runoff_vol.VAR[,3]==0])/1000,
-                            source_magnitude = sum(SW_GW[SW_GW<0 & runoff_vol.VAR[,3]==0])/1000/giw.INFO[,"area_watershed"]*-1
+      precip_vol<-sum(precip.VAR)*giw.INFO[,"area_wetland"]
+      duration<-data.frame(runoff_duration = length(spill_vol.VAR[runoff_vol.VAR[,3]>0,3])/1000,
+                           runoff_magnitude = sum(spill_vol.VAR[runoff_vol.VAR[,3]>0,3])/precip_vol,
+                           sink_duration = length(SW_GW[SW_GW>0 & runoff_vol.VAR[,3]==0])/1000,
+                           sink_magnitude = sum(SW_GW[SW_GW>0 & runoff_vol.VAR[,3]==0])/precip_vol,
+                           source_duration = length(SW_GW[SW_GW<0 & runoff_vol.VAR[,3]==0])/1000,
+                           source_magnitude = -1*sum(SW_GW[SW_GW<0 & runoff_vol.VAR[,3]==0])/precip_vol
       )
       
       #Combine data

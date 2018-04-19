@@ -237,28 +237,25 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
                                 0)
     
     #Exchange with the lumped module
-    Ax.VAR[day, wet.VAR]<<-2*pi*((giw.INFO[wet.INFO,"area_wetland"]/pi)^0.5)*(y_w.VAR[day,wet.VAR]-giw.INFO[wet.INFO,"y_cl"])
     if((y_w.VAR[day, wet.VAR]-y_wt.VAR[day,1])==0 | day==1){
       GW_local.VAR[day,wet.VAR]<<- 0
     }else{  
       r_w <-(stage2area_giw.fun(vol2stage_giw.fun(V_w.VAR[day, wet.VAR]))/pi)^0.5    
-      r_w <- ifelse(r_w==0, 
-                    (giw.INFO[,"area_wetland"]/pi)^0.5,
-                    r_w)
+      r_w <- ifelse(r_w>0, r_w, (giw.INFO[,"area_wetland"]/pi)^0.5)
       r_ws <- giw.INFO[wet.INFO, "dLe"] + r_w
       y_w<-y_w.VAR[day, wet.VAR] + giw.INFO[wet.INFO, "dz"]
       GW_local.VAR[day,wet.VAR]<<- pi*giw.INFO[wet.INFO,"k_sat"]*((y_wt.VAR[day, 1]^2)-(y_w^2))/log(r_ws/r_w)
     }
     
-    #Adjust for differences in elevation
-    runoff<-runoff_vol.VAR[day,1]*giw.INFO[,"vol_ratio"]
-    
+    #Adjust for differences in contribruting watershed area
+    runoff_vol.VAR[day,wet.VAR]<<- runoff_vol.VAR[day,"land"]*giw.INFO[,"vol_ratio"]
+   
     #Calculate the change in volume of wetland water table
-    dV_w.VAR[day, wet.VAR]<<-R.VAR[day,wet.VAR]*giw.INFO[wet.INFO,"area_wetland"]-
-      ET_wt.VAR[day, wet.VAR]*giw.INFO[wet.INFO,"area_wetland"]+
-      GW_local.VAR[day,wet.VAR]+
-      runoff+
-      spill_vol.VAR[day,1]*giw.INFO[wet.INFO,"vol_ratio"]
+    dV_w.VAR[day, wet.VAR]<<- R.VAR[day,wet.VAR]*giw.INFO[wet.INFO,"area_wetland"]-
+                              ET_wt.VAR[day, wet.VAR]*giw.INFO[wet.INFO,"area_wetland"]+
+                              GW_local.VAR[day,wet.VAR]+
+                              runoff_vol.VAR[day,wet.VAR]+
+                              spill_vol.VAR[day,1]*giw.INFO[wet.INFO,"vol_ratio"]
     
     #Characterize the change in water level
     #Calculate the next days volume
@@ -291,9 +288,18 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
     
     
     #change in wetland storage (mm^3)
-    dV_w.VAR[day,"wetland"]<<-(precip.VAR[day]-pet.VAR[day])*As.VAR[day,"wetland"]-GW_local.VAR[day,"wetland"]+((1-giw.INFO[,"vol_ratio"])*runoff_vol.VAR[day,"land"])-spill_vol.VAR[day,paste(giw.ID)]
+    area_lumped_wetland<-
+    dV_w.VAR[day,"wetland"]<<-precip.VAR[day]*land.INFO[,"wetland_area"]-
+                              pet.VAR[day]*As.VAR[day,"wetland"]+
+                              GW_local.VAR[day,"wetland"]+
+                              ((1-giw.INFO[,"vol_ratio"])*runoff_vol.VAR[day,"land"])
     V_w.VAR[day+1,"wetland"]<<-V_w.VAR[day,"wetland"]+dV_w.VAR[day,"wetland"]
-    V_w.VAR[day+1,"wetland"]<<-ifelse(V_w.VAR[day+1,"wetland"]>0, V_w.VAR[day+1,"wetland"], 0)
+    
+    #If Wetland is dry
+    if(V_w.VAR[day+1,"wetland"]<=0){
+        V_w.VAR[day+1,"wetland"]<<- 0
+        GW_local.VAR[day, "wetland"] <<- 0
+    }
     
     #Calculate Surface water spillage (if there is any)
     if(V_w.VAR[day+1,"wetland"]>land.INFO[,"volume_max"]){
@@ -366,7 +372,7 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
     
     #Estimate Change in Water Table Depth~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Local GW Flux (Assume water flowing out of the wetlands is positive)
-    GW_local.VAR[day,"land"]<<-sum(GW_local.VAR[day,])+GW_local.VAR[day,"land"]
+    GW_local.VAR[day,"land"]<<--1*GW_local.VAR[day,"wetland"]+GW_local.VAR[day,3]
     GW_local<-GW_local.VAR[day,"land"]/(land.INFO[,"area"]-sum(giw.INFO[,"area_wetland"]))
     
     #Recharge
@@ -376,11 +382,11 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
                                0)
     
     
-    #Flux out of the watershed (e.g. baseflow)
+    #Flux out of the watershed (e.g. baseflow from SWAT manual)
     GW_bf.VAR[day,"land"]<<-ifelse(day==1,
-                                   10,
-                                   ifelse(GW_bf.VAR[day-1,"land"]*exp(-land.INFO[,"kb"])+(R.VAR[day,"land"]+loss_lm.VAR[day,"land"]-ET_wt.VAR[day,"land"])*(1-exp(-land.INFO[,"kb"]))>0,
-                                          GW_bf.VAR[day-1,"land"]*exp(-land.INFO[,"kb"])+(R.VAR[day,"land"]+loss_lm.VAR[day,"land"]-ET_wt.VAR[day,"land"])*(1-exp(-land.INFO[,"kb"])),
+                                   land.INFO[,"GW_bf_0"],
+                                   ifelse(GW_bf.VAR[day-1,"land"]*exp(-land.INFO[,"kb"])+(R.VAR[day,"land"]+loss_lm.VAR[day,"land"]-ET_wt.VAR[day,"land"])*(1-exp(-land.INFO[,"kb"]))<0,
+                                          (GW_bf.VAR[day-1,"land"]*exp(-land.INFO[,"kb"])+(R.VAR[day,"land"]+loss_lm.VAR[day,"land"]-ET_wt.VAR[day,"land"])*(1-exp(-land.INFO[,"kb"]))),
                                           0))
     
     #Water Table Depth
@@ -410,7 +416,7 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
   
   #set initial conditions
   V_w.VAR[1,"wetland"]<-land.INFO[,"volume_max"]
-  GW_bf.VAR[1,"land"]<-land.INFO[,"GW_bf_0"]
+  land.INFO[,"GW_bf_0"]<-10
   y_wt.VAR[1,]<-land.INFO[,"y_wt_0"]
   s_ex.VAR[1,]<-land.INFO[,"s_t_0"]
   s_lim.VAR[1,]<-land.INFO[,"s_t_0"]  
