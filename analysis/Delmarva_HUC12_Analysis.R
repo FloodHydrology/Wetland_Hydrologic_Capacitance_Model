@@ -491,7 +491,7 @@ write.csv(results, "results.csv")
 save.image("backup/results.RData")
 
 ####################################################################################
-# Step 4: Plot-------- -------------------------------------------------------------
+# Step 4: Plot----------------------------------------------------------------------
 ####################################################################################
 #Setup workspace
 remove(list=ls())
@@ -552,6 +552,7 @@ water_balance<-results$precip+results$SW_in+results$GW_in-results$ET-results$SW_
 hist(water_balance)
 
 #Plot byplots of duration and magnitude~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-plot(results$runoff_duration,results$runoff_magnitude, xlim=c(36,38), ylim=c(0.1,50), log="y")
+par(mfrow=c(1,3))
+plot(results$runoff_duration,results$runoff_magnitude, xlim=c(36.5,37.5), ylim=c(0.1,50), log="y")
 plot(results$source_duration,results$source_magnitude, log="y")
 plot(results$sink_duration,results$sink_magnitude, log="y")

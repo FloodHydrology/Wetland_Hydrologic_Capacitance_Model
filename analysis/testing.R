@@ -34,14 +34,10 @@ giw<-data.frame(timestep  = seq(1,  3651, 1),
 )
 
 
-
-
-
-
 #For GW Local
-plot(giw$y_w[1000:1300]+giw.INFO[1,"dz"], col="blue", type="l", ylim=c(-400,0))
-points(y_w.VAR[1000:1300,"wetland"], col="dark green", type="l", lty=2)
-points(y_wt.VAR[1000:1300,1], col="brown", type="l")
+plot(giw$y_w+giw.INFO[1,"dz"], col="blue", type="l", ylim=c(-400,0))
+#points(y_w.VAR[1000:1300,"wetland"], col="dark green", type="l", lty=2)
+points(y_wt.VAR[,1], col="brown", type="l")
 abline(h=giw.INFO[,"invert"])
 
 
