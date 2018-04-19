@@ -462,20 +462,20 @@ load("backup/Model_Setup.Rdata")                                            # lo
 
 # 3.2 Run the Model ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 t0<-Sys.time()
-sopts <- list(partition = "sesync", time = "12:00:00" )
+sopts <- list(partition = "sesync", time = "3:00:00" )
 params<-data.frame(WetID=wetlands.shp$WetID)
 delmarva<- slurm_apply(fun, params,
-                        add_objects = c(
-                          #Functions
-                          "wetland.hydrology",
-                          #Spatial data
-                          "fac.grd","catchments.shp","flowlines.shp",
-                          "soils.shp","wetlands.shp","dem.grd",
-                          #Climate data
-                          "precip.VAR", "pet.VAR"),
-                        nodes = 16, cpus_per_node=8,
-                        pkgs=c('sp','raster','rgdal','rgeos','dplyr'),
-                        slurm_options = sopts)
+                       add_objects = c(
+                         #Functions
+                         "wetland.hydrology",
+                         #Spatial data
+                         "fac.grd","catchments.shp","flowlines.shp",
+                         "soils.shp","wetlands.shp","dem.grd",
+                         #Climate data
+                         "precip.VAR", "pet.VAR"),
+                       nodes = 16, cpus_per_node=8,
+                       pkgs=c('sp','raster','rgdal','rgeos','dplyr'),
+                       slurm_options = sopts)
 
 # 3.3 Check job status and collect results
 print_job_status(delmarva)
@@ -496,7 +496,7 @@ save.image("backup/results.RData")
 #Setup workspace
 remove(list=ls())
 load("backup/results.Rdata")
-
+results<-read.csv("results.csv")
 #Plot time series of wetland water level~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Transform data
 level<-data.frame(t(results[,29:393]))
@@ -543,10 +543,15 @@ par(cex.lab=14/12)
 
 #Start Boxplot
 boxplot(df, col="grey90", pch=19, outcol="#7f7f7f7D", cex=0.5, 
-        ylim=c(0,0.3),ylab="Normalized Annual Flowpath Flux [year]", 
+        ylim=c(0,1),ylab="Normalized Annual Flowpath Flux [year]", 
         names = c("Net SW Outflow","GW Outflow", "GW Inflow")
 )
 
-
+#Plot histogram of water balance [closure]~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 water_balance<-results$precip+results$SW_in+results$GW_in-results$ET-results$SW_out-results$GW_out
+hist(water_balance)
 
+#Plot byplots of duration and magnitude~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+plot(results$runoff_duration,results$runoff_magnitude, xlim=c(36,38), ylim=c(0.1,50), log="y")
+plot(results$source_duration,results$source_magnitude, log="y")
+plot(results$sink_duration,results$sink_magnitude, log="y")
