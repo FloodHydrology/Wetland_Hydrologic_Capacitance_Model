@@ -51,7 +51,7 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
         psi_fc<-giw.INFO[wet.INFO,"psi"]/1000*giw.INFO[wet.INFO,"s_fc"]^(-1/4.05) #see eq. 26 in Laio 2011
         A<-(psi_fc-giw.INFO[wet.INFO,"psi"]-giw.INFO[wet.INFO,"y_c"])/(psi_fc-giw.INFO[wet.INFO,"psi"]-giw.INFO[wet.INFO,"y_c"]-(5*abs(giw.INFO[wet.INFO,"RD"])))
         if(y_sat>(-5*abs(giw.INFO[wet.INFO,"RD"])+psi_fc-giw.INFO[wet.INFO,"psi"])){
-          A<-abs(A) #Change for now.  Need to redo y_c definition...
+          A<-abs(A) #Change for now.  
           y_hm<-(1-A^(3/4))*(y_sat-giw.INFO[wet.INFO,"y_c"])-(A^2*(1-A^(-1/4)))/(-giw.INFO[wet.INFO,"y_c"]+psi_fc-giw.INFO[wet.INFO,"psi"])*(y_sat-giw.INFO[wet.INFO,"y_c"])^2
         }else{
           y_hm<-y_sat-psi_fc+giw.INFO[wet.INFO,"psi"]
@@ -182,8 +182,9 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
       y_hm.VAR[day,wet.VAR]<<-giw.INFO[wet.INFO,"invert"]
     }else{
       psi_fc<-giw.INFO[wet.INFO,"psi"]*giw.INFO[wet.INFO,"s_fc"]^(-1/4.05) #see eq. 26 in Laio 2011
-      A<-(psi_fc-giw.INFO[wet.INFO,"psi"]-giw.INFO[wet.INFO,"y_c"])/(psi_fc-giw.INFO[wet.INFO,"psi"]-giw.INFO[wet.INFO,"y_c"]-(5*abs(giw.INFO[wet.INFO,"RD"])))
+      A<-(psi_fc-giw.INFO[wet.INFO,"psi"]-giw.INFO[wet.INFO,"y_c"])/(psi_fc-giw.INFO[wet.INFO,"psi"]-giw.INFO[wet.INFO,"y_c"]-(5*(abs(giw.INFO[wet.INFO,"RD"]))))
       if(y_sat.VAR[day,wet.VAR]>(-5*abs(giw.INFO[wet.INFO,"RD"])+psi_fc-giw.INFO[wet.INFO,"psi"])){
+        A<-abs(A)
         y_hm.VAR[day,wet.VAR]<<-(1-A^(3/4))*(y_sat.VAR[day,wet.VAR]-giw.INFO[wet.INFO,"y_c"])-(A^2*(1-A^(-1/4)))/(-giw.INFO[wet.INFO,"y_c"]+psi_fc-giw.INFO[wet.INFO,"psi"])*(y_sat.VAR[day,wet.VAR]-giw.INFO[wet.INFO,"y_c"])^2
       }else{
         y_hm.VAR[day,wet.VAR]<<-y_sat.VAR[day,wet.VAR]-psi_fc+giw.INFO[wet.INFO,"psi"]
@@ -325,6 +326,7 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
       psi_fc<-land.INFO[,"psi"]*land.INFO[,"s_fc"]^(-1/4.05) #see eq. 26 in Laio 2011
       A<-(psi_fc-land.INFO[,"psi"]-land.INFO[,"y_c"])/(psi_fc-land.INFO[,"psi"]-land.INFO[,"y_c"]-(5*abs(land.INFO[,"RD"])))
       if(y_sat.VAR[day,"land"]>(-5*abs(land.INFO[,"RD"])+psi_fc-land.INFO[,"psi"])){
+        A<-abs(A)
         y_hm.VAR[day,"land"]<<-(1-A^(3/4))*(y_sat.VAR[day,"land"]-land.INFO[,"y_c"])-(A^2*(1-A^(-1/4)))/(-land.INFO[,"y_c"]+psi_fc-land.INFO[,"psi"])*(y_sat.VAR[day,"land"]-land.INFO[,"y_c"])^2
       }else{
         y_hm.VAR[day,"land"]<<-y_sat.VAR[day,"land"]-psi_fc+land.INFO[,"psi"]
@@ -361,8 +363,6 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
     #Loss
     loss_lm.VAR[day,"land"]<<-land.INFO[,"n"]*(s_ex.VAR[day,"land"]-s_lim.VAR[day,"land"])*abs(y_hm.VAR[day,"land"])
     
-    
-    
     #Calculate soil moisture
     ds.VAR[day,"land"]<<-ifelse(abs(y_hm.VAR[day,"land"])>0, 
                                 (R_lm.VAR[day,"land"]-ET_lm.VAR[day,"land"]-loss_lm.VAR[day,"land"])/abs(y_hm.VAR[day,"land"]),
@@ -392,7 +392,7 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
     #Water Table Depth
     dy_wt.VAR[day,"land"]<<-(1/land.INFO[,"Sy"])*(R.VAR[day,"land"]+
                                                     loss_lm.VAR[day,"land"]-
-                                                    ET_wt.VAR[day,"land"]-
+                                                    ET_wt.VAR[day,"land"]+
                                                     GW_bf.VAR[day,"land"]+
                                                     GW_local) #change in water table elevation
     if((y_wt.VAR[day,"land"]+dy_wt.VAR[day,"land"])>0){

@@ -173,7 +173,7 @@ sopts <- list(partition = "sesync", time= "1:00:00")
 params<-data.frame(cat=seq(1,length(catchments.shp)))
 flowpath_job<- slurm_apply(divide_dist.fun, params,
                            add_objects = c("catchments.shp","wetlands.shp"),
-                           nodes = 8, cpus_per_node=8,
+                           nodes = 20, cpus_per_node=8,
                            pkgs=c('sp','raster','rgdal','rgeos','geosphere'),
                            slurm_options = sopts)
 results <- get_slurm_out(flowpath_job, outtype = "table")
@@ -379,7 +379,7 @@ fun<-function(WetID){ #
   execute<-function(n.years){
     #i. Run WHC Model w/ tryCatch
     output<-tryCatch(wetland.hydrology(giw.INFO,land.INFO, lumped.INFO, precip.VAR, pet.VAR, n.years, area, volume, giw.ID),
-                     error = function(e) error = function(e) data.frame(matrix(0,ncol=390,nrow=1)))
+                     error = function(e) data.frame(matrix(0,ncol=390,nrow=1)))
     
     #ii. Organize output 
     if(is.list(output)==T){
@@ -388,21 +388,23 @@ fun<-function(WetID){ #
       
       #Isolate SW-GW fluxes to and from wetland
       SW_GW<-GW_local.VAR[,3]
+      GWin<-ifelse(SW_GW>0, SW_GW, 0)
+      GWout<-ifelse(SW_GW<0, abs(SW_GW), 0)
       
       #Isolate giw.INFO for wetland of interest
       giw.INFO<-matrix(giw.INFO[giw.ID,],nrow=1,  dimnames = list(c(1), colnames(giw.INFO)))
       
       #Calcutlate waterbalance components 
-      water_balance<-data.frame(precip=sum(precip.VAR)/1000,
-                                PET=sum(pet.VAR)/1000,
-                                ET=(sum(ET_lm.VAR[,3])+sum(ET_wt.VAR[,3]))/1000,
-                                SW_out=sum(spill_vol.VAR[,3])/1000/giw.INFO[,"area_wetland"],
-                                SW_in=sum(runoff_vol.VAR[,1]/giw.INFO[,"area_wetland"]*giw.INFO[,"vol_ratio"])/1000,
-                                GW_out=sum(SW_GW[SW_GW<0])/giw.INFO[,"area_wetland"]/1000,
-                                GW_in=sum(SW_GW[SW_GW>0])/giw.INFO[,"area_wetland"]/1000)
+      water_balance<-data.frame(precip=sum(precip.VAR)/n.years,
+                                PET=sum(pet.VAR)/n.years,
+                                ET=(sum(ET_lm.VAR[,3])+sum(ET_wt.VAR[,3]))/n.years,
+                                runoff_in=sum(runoff_vol.VAR[,1]/giw.INFO[,"area_wetland"]*giw.INFO[,"vol_ratio"])/n.years,
+                                SW_out=sum(spill_vol.VAR[runoff_vol.VAR[,3]==0,3])/n.years/giw.INFO[,"area_wetland"],
+                                GW_out=sum(SW_GW[SW_GW<0])/giw.INFO[,"area_wetland"]/n.years,
+                                GW_in=sum(SW_GW[SW_GW>0])/giw.INFO[,"area_wetland"]/n.years)
       
       #Calculate mean water level for each calander day
-      hydrograph<-data.frame(day=rep(seq(1,365),1000), y_w=y_w.VAR[1:(n.years*365),3])
+      hydrograph<-data.frame(day=rep(seq(1,365),n.years), y_w=y_w.VAR[1:(n.years*365),3])
       hydrograph$y_w<- hydrograph$y_w + abs(giw.INFO[,"invert"])
       hydrograph$y_w<-ifelse(hydrograph$y_w>0, 
                              hydrograph$y_w/abs(giw.INFO[,"invert"]), 
@@ -412,15 +414,29 @@ fun<-function(WetID){ #
       colnames(y_w)<-hydrograph$day
       
       #Estimate duration and magnitudes
-      precip_vol<-sum(precip.VAR)*giw.INFO[,"area_wetland"]
-      duration<-data.frame(runoff_duration = length(spill_vol.VAR[runoff_vol.VAR[,3]>0,3])/1000,
-                           runoff_magnitude = sum(spill_vol.VAR[runoff_vol.VAR[,3]>0,3])/precip_vol,
-                           sink_duration = length(SW_GW[SW_GW>0 & runoff_vol.VAR[,3]==0])/1000,
-                           sink_magnitude = sum(SW_GW[SW_GW>0 & runoff_vol.VAR[,3]==0])/precip_vol,
-                           source_duration = length(SW_GW[SW_GW<0 & runoff_vol.VAR[,3]==0])/1000,
-                           source_magnitude = -1*sum(SW_GW[SW_GW<0 & runoff_vol.VAR[,3]==0])/precip_vol
-      )
-      
+      precip_vol<-sum(precip.VAR[1:(n.years*365)])*giw.INFO[,"area_wetland"]
+      shift<-precip.VAR[1:(n.years*365)]+c(0,precip.VAR[1:(n.years*365-1)])
+      precip.VAR<-c(precip.VAR,0)
+      shift<-c(shift,0)
+      duration<-data.frame(#Quick Flow
+                           QFin_duration   = length(spill_vol.VAR[shift!=0,2])/n.years/2,
+                           QFin_magnitude  = (sum(spill_vol.VAR[shift!=0,2])*giw.INFO[,"vol_ratio"] +
+                                              sum(runoff_vol.VAR[shift!=0,1]*giw.INFO[,"vol_ratio"]) +
+                                              sum(GWin[shift!=0]))/precip_vol,
+                           QFout_duration  = length(spill_vol.VAR[shift!=0 & spill_vol.VAR[,3]!=0,3])/n.years, 
+                           QFout_magnitude = sum(spill_vol.VAR[shift!=0,3])/precip_vol,
+                           
+                           #Surface water fluxes
+                           SWin_duration   = length(spill_vol.VAR[shift==0 & spill_vol.VAR[,2]>0])/n.years, 
+                           SWin_magnitude  = (sum(spill_vol.VAR[shift==0,2])+sum(runoff_vol.VAR[shift==0,1]))*giw.INFO[,"vol_ratio"]/precip_vol,
+                           SWout_duration  = length(spill_vol.VAR[shift==0 & spill_vol.VAR[,3]>0])/n.years,
+                           SWout_magnitude = sum(spill_vol.VAR[shift==0,3])/precip_vol,
+                           
+                           #Groundwater Fluxes
+                           GWin_duration   = length(GWin[GWin>0 & shift==0])/n.years,
+                           GWin_magnitude  = sum(GWin[GWin>0 & shift==0])/precip_vol,
+                           GWout_duration  = length(GWout[GWout>0])/n.years,
+                           GWout_magnitude = sum(GWout[GWout>0])/precip_vol)
       #Combine data
       output<-cbind(giw.INFO, water_balance, duration, y_w)
     }
@@ -435,9 +451,9 @@ fun<-function(WetID){ #
     "giw.ID","WetID","area_watershed","area_wetland","invert",
     "vol_ratio", "dL", "dLe", "dz","n","s_fc","psi","y_cl" ,"y_c","s_wilt","k_sat","RD", "b","Sy", "y_w_0" , "s_t_0",
     #Water Balance
-    "precip","PET","ET","SW_out","SW_in","GW_out","GW_in", 
+    "precip","PET","ET","runoff_in","SW_out","GW_out","GW_in", 
     #duration
-    "runoff_duration","runoff_magnitude","sink_duration","sink_magnitude","source_duration","source_magnitude",
+    "QFin_duration","QFin_magnitude","QFout_duration","QFout_magnitude","SWin_duration","SWin_magnitude","SWout_duration","SWout_magnitude","GWin_duration","GWin_magnitude","GWout_duration","GWout_magnitude",
     #Normalized Flow
     seq(1,365))
   
@@ -462,7 +478,7 @@ load("backup/Model_Setup.Rdata")                                            # lo
 
 # 3.2 Run the Model ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 t0<-Sys.time()
-sopts <- list(partition = "sesync", time = "3:00:00" )
+sopts <- list(partition = "sesync", time = "12:00:00" )
 params<-data.frame(WetID=wetlands.shp$WetID)
 delmarva<- slurm_apply(fun, params,
                        add_objects = c(
@@ -473,7 +489,7 @@ delmarva<- slurm_apply(fun, params,
                          "soils.shp","wetlands.shp","dem.grd",
                          #Climate data
                          "precip.VAR", "pet.VAR"),
-                       nodes = 16, cpus_per_node=8,
+                       nodes = 20, cpus_per_node=8,
                        pkgs=c('sp','raster','rgdal','rgeos','dplyr'),
                        slurm_options = sopts)
 
@@ -496,10 +512,13 @@ save.image("backup/results.RData")
 #Setup workspace
 remove(list=ls())
 load("backup/results.Rdata")
-results<-read.csv("results.csv")
+
 #Plot time series of wetland water level~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #Transform data
-level<-data.frame(t(results[,29:393]))
+level<-data.frame(t(results[,41:405]))
+
+#Filter Level
+level<-level[,level[1,]<0.975]
 
 #Setup Plotting space
 par(mar=c(3.1,3.5,0.35,0.35))
@@ -510,7 +529,7 @@ par(cex.lab=14/12)
 
 #start plot
 plot(level[,1], type="n", 
-     ylim=c(-0.5,1), ylab = "Normalized Water Level [m/m]", 
+     ylim=c(-0.7,1), ylab = "Normalized Water Level [m/m]", 
      xlab="Julian Day"
 )
 
@@ -524,7 +543,7 @@ for(i in 1:length(level[1,])){
 points(rowMeans(level), type="l", col="black", lwd=4)
 
 #Plot relevant fluxes~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-df<-data.frame(SW_out = results$SW_out-results$SW_in,
+df<-data.frame(SW_out = results$SW_out-results$runoff_in,
                GW_out = results$GW_out,
                GW_in =  results$GW_in)
 df<-df/results$precip
@@ -543,7 +562,7 @@ par(cex.lab=14/12)
 
 #Start Boxplot
 boxplot(df, col="grey90", pch=19, outcol="#7f7f7f7D", cex=0.5, 
-        ylim=c(0,1),ylab="Normalized Annual Flowpath Flux [year]", 
+        ylim=c(0,0.65),ylab="Normalized Annual Flowpath Flux [year]", 
         names = c("Net SW Outflow","GW Outflow", "GW Inflow")
 )
 
@@ -552,7 +571,11 @@ water_balance<-results$precip+results$SW_in+results$GW_in-results$ET-results$SW_
 hist(water_balance)
 
 #Plot byplots of duration and magnitude~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-par(mfrow=c(1,3))
-plot(results$runoff_duration,results$runoff_magnitude, xlim=c(36.5,37.5), ylim=c(0.1,50), log="y")
-plot(results$source_duration,results$source_magnitude, log="y")
-plot(results$sink_duration,results$sink_magnitude, log="y")
+par(mfrow=c(3,2))
+plot(results$QFin_duration,  results$QFin_magnitude,  log="y", xlab="QF Inflow Duration [days]", ylab = "Magnitude [Flux/Precip]", pch=19, cex=0.5, col="grey30")
+plot(results$QFout_duration, results$QFout_magnitude, log="y", ylim=c(1e-6,50), xlim=c(1,365), xlab="QF outflow Duration [days]", ylab = "Magnitude [Flux/Precip]", pch=19)
+plot(results$SWin_duration,  results$SWin_magnitude,  log="y", ylim=c(1e-6,50), xlim=c(1,365), xlab="SW Inflow Duration [days]", ylab = "Magnitude [Flux/Precip]", pch=19)
+plot(results$SWout_duration, results$SWout_magnitude, log="y", ylim=c(1e-6,50), xlim=c(1,365), xlab="SW Outflow Duration [days]", ylab = "Magnitude [Flux/Precip]", pch=19)
+plot(results$GWout_duration, results$GWout_magnitude, log="y", ylim=c(1e-6,50), xlim=c(1,365), xlab="GW Inflow Duration [days]", ylab = "Magnitude [Flux/Precip]", pch=19)
+plot(results$GWin_duration,  results$GWin_magnitude,  log="y", ylim=c(1e-6,50), xlim=c(1,365), xlab="GW Outflow Duration [days]", ylab = "Magnitude [Flux/Precip]", pch=19)
+
