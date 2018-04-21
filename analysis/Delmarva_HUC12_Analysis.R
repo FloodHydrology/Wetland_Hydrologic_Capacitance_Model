@@ -529,7 +529,7 @@ par(cex.lab=14/12)
 
 #start plot
 plot(level[,1], type="n", 
-     ylim=c(-0.7,1), ylab = "Normalized Water Level [m/m]", 
+     ylim=c(-0.5,1), ylab = "Normalized Water Level [m/m]", 
      xlab="Julian Day"
 )
 
@@ -562,7 +562,7 @@ par(cex.lab=14/12)
 
 #Start Boxplot
 boxplot(df, col="grey90", pch=19, outcol="#7f7f7f7D", cex=0.5, 
-        ylim=c(0,0.65),ylab="Normalized Annual Flowpath Flux [year]", 
+        ylim=c(0,0.5),ylab="Normalized Annual Flowpath Flux [year]", 
         names = c("Net SW Outflow","GW Outflow", "GW Inflow")
 )
 
