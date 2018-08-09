@@ -12,59 +12,51 @@
 rm(list=ls(all=TRUE))
 
 # 1b. Load Packages ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-library(sp)                                                                 # for spatial analysis
-library(raster)                                                             # for spatial analysis
-library(rgdal)                                                              # for spatial analysis
-library(rgeos)                                                              # for spatial analysis
-library(dplyr)                                                              # for data processing
-library(rslurm)                                                             # parallel computing
-library(geosphere)                                                          # for spatial analysis
+library(sp)          # for spatial analysis
+library(raster)      # for spatial analysis
+library(rgdal)       # for spatial analysis
+library(rgeos)       # for spatial analysis
+library(dplyr)       # for data processing
+library(rslurm)      # parallel computing
+library(geosphere)   # for spatial analysis
 
 # 1c. Define Master Working Directory ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-wd<-"//nfs/WHC-data/Regional_Analysis/PPR/"                             # Define working directory for later reference
-setwd(wd)                                                                   # Set working directory
+wd<-"//nfs/WHC-data/Regional_Analysis/PPR/"    # Define working directory for later reference
+setwd(wd)                                      # Set working directory
 
 # 1d. Obtain Model Inputs ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Download Model Inputs (and put everything in a uniform projection)
-load("Model_inputs/climate.Rdata")                                                # Climate data from Delmarva_HUC12_Climate_Data
-#wetlands.shp<-readOGR("inputs/.","NWI")                                     # Import wetland shapefile
-wetlands.shp<-readOGR("Model_inputs/.","wetlands")                                     # Import wetland shapefile
-wetlands.shp@data$WetID<-seq(1,length(wetlands.shp))                    # add (?) WetID column to shp file using sequence from 1:total num of wetlands
-#HUC12.shp<-readOGR("inputs/.","HUC12")                                      # Import HUC 12 shapefile
-HUC12.shp<-readOGR("Model_inputs/.","HUC12")                                      # Import HUC 12 shapefile
-HUC12.shp<-spTransform(HUC12.shp, wetlands.shp@proj4string)             # transform HUC 12 shapefile's projection into same as wetlands
-#catchments.shp<-readOGR("inputs/.","NHD_catchments")                        # import NHD catchments
-catchments.shp<-readOGR("Model_inputs/.","catchments")                        # import NHD catchments
-catchments.shp<-spTransform(catchments.shp, wetlands.shp@proj4string)   # transform NHD catchment's projection into same as wetlands
-#flowlines.shp<-readOGR("inputs/.","NHDplus")                                # import NHD flowlines
-flowlines.shp<-readOGR("Model_inputs/.","flow_net")                                # import NHD flowlines
-flowlines.shp<-spTransform(flowlines.shp, wetlands.shp@proj4string)     # transform NHD flowline's projection into same as wetlands
-#fac.grd<-raster("inputs/fac")                                               # import flow accumulation raster
-#soils.shp<-readOGR("inputs/.","soils")                                      # import soils shapefile
-fac.grd<-raster("Model_inputs/fac2")                                               # import flow accumulation raster
-soils.shp<-readOGR("Model_inputs/.","soils")                                      # import soils shapefile
-soils.shp<-spTransform(soils.shp, wetlands.shp@proj4string)             # transform soil file's projection into same as wetlands
-#soils<-read.csv("inputs/WHC_Soils_Input.csv")                           # import existing soil parameters csv
-soils<-read.csv("Model_inputs/WHC_Soils_Input.csv")                           # import existing soil parameters csv
-soils.shp@data<-merge(soils.shp@data,soils, by.x='MUKEY', by.y="MUID")  # append soils csv data into soils shapefile by matching MUKEY and MUID
-remove(soils)                                                           # delete soils df
-#dem.grd<-raster("inputs/NHDPlus02/Elev_Unit_a/elev_cm")                     # import DEM file
-dem.grd<-raster("Model_inputs/dem_cm")                     # import DEM file
-mask<-spTransform(catchments.shp, dem.grd@crs)                          # transform file's projection
-dem.grd<-crop(dem.grd, mask)                                            # crop out portion of dem to keep relevant areas only
-remove(mask)                                                            # remove dummy variable mask
-dem.grd<-projectRaster(dem.grd, crs=catchments.shp@proj4string)         # project raster
-#nfw_centroid.shp<-readOGR("inputs/.","NFW_centroids")                       # NFW from Lane and D'Amico 2016
-#nfw_centroid.shp<-readOGR("Model_inputs/.","NFW_centroids")                       # NFW from Lane and D'Amico 2016
-#nfw_centroid.shp<-spTransform(nfw_centroid.shp, wetlands.shp@proj4string)
-nfw_centroid.shp <- centroid(wetlands.shp)
-
+load("Model_inputs/climate.Rdata")                                      # Climate data from PPR_HUC12_Climate_Data                                             
+wetlands.shp<-readOGR("Model_inputs/.","wetlands")                      # Import wetland shapefile
+  wetlands.shp@data$WetID<-seq(1,length(wetlands.shp))                  # add (?) WetID column to shp file using sequence from 1:total num of wetlands
+  p<-wetlands.shp@proj4string                                           # Define projection of interest
+HUC12.shp<-readOGR("Model_inputs/.","HUC12")                            # Import HUC 12 shapefile
+  HUC12.shp<-spTransform(HUC12.shp, wetlands.shp@proj4string)           # transform HUC 12 shapefile's projection into same as wetlands
+catchments.shp<-readOGR("Model_inputs/.","catchments")                  # import NHD catchments
+  catchments.shp<-spTransform(catchments.shp, p)                        # transform NHD catchment's projection into same as wetlands
+flowlines.shp<-readOGR("Model_inputs/.","flow_net")                     # import NHD flowlines
+  flowlines.shp<-spTransform(flowlines.shp, p)                          # transform NHD flowline's projection into same as wetlands
+fac.grd<-raster("Model_inputs/fac2")                                    # import flow accumulation raster
+soils.shp<-readOGR("Model_inputs/.","soils")                            # import soils shapefile
+  soils.shp<-spTransform(soils.shp, p)                                  # transform soil file's projection into same as wetlands
+  soils<-read.csv("Model_inputs/WHC_Soils_Input.csv")                   # import existing soil parameters csv
+  soils.shp@data<-merge(soils.shp@data,soils, by.x='MUKEY', by.y="MUID")# append soils csv data into soils shapefile by matching MUKEY and MUID
+  remove(soils)                                                         # delete soils df
+dem.grd<-raster("Model_inputs/dem_cm")                                  # import DEM file
+  mask<-spTransform(catchments.shp, dem.grd@crs)                        # transform file's projection
+  dem.grd<-crop(dem.grd, mask)                                          # crop out portion of dem to keep relevant areas only
+  remove(mask)                                                          # remove dummy variable mask
+  dem.grd<-projectRaster(dem.grd, crs = p)                              # project raster
+nfw_centroid.shp<-readOGR("Model_inputs/.","NFW_centroids")             # NFW from Lane and D'Amico 2016
+  nfw_centroid.shp<-spTransform(nfw_centroid.shp, p)                    # project polygon
+rootdepth.grd<-raster("Model_inputs/rootdepth")                         # Rooting depth estimate from Fan et al., 2017 [PNAS]
+  rootdepth.grd<-projectRaster(rootdepth.grd, crs = p)                  # project raster
+  rootdepth.grd<-raster::resample(rootdepth.grd, dem.grd)               # resample raster so it is same size
 
 # 1e. Delineate "Isolated" Wetlands  (Use NFW from Lane and D'Amico 2016) ~~~~~~~~~~~~~
 wetlands.shp$dist2stream<-apply(gDistance(flowlines.shp,wetlands.shp, byid=TRUE),1,min) # Calculate euclidean distance to stream network
 wetlands.shp$area_m2<-gArea(wetlands.shp,byid=T)                                        # Caclculate wetland area
 wetlands.shp<-wetlands.shp[nfw_centroid.shp,]
-
 
 # 1f. Alternate distances ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 wetlandCentroid <- centroid(wetlands.shp)                                   # get centroid of each wetland
@@ -86,7 +78,7 @@ save.image("backup/Inputs.Rdata")                                           # sa
 ####################################################################################
 # 2.1 Set Up workspace ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 remove(list=ls())                                                           # clear environment
-wd<-"//nfs/WHC-data/Regional_Analysis/Delmarva"                             # Define working directory for later reference
+wd<-"//nfs/WHC-data/Regional_Analysis/PPR/"                             # Define working directory for later reference
 setwd(wd)                                                                   # Set working directory
 load("backup/Inputs.Rdata")                                                 # load inputs from previous processing
 source("~/Wetland_Hydrologic_Capacitance_Model/R/WHC_2.R")                  # compile WHC function 
@@ -220,6 +212,8 @@ fun<-function(WetID){ #
   dem_temp.grd<-dem_temp.grd/100 #Convert to m
   fac_temp.grd<-crop(fac.grd, catchment_temp.shp)
   fac_temp.grd<-mask(fac_temp.grd, catchment_temp.shp)
+  root_temp.grd<-crop(rootdepth.grd, catchment_temp.shp)
+  root_temp.grd<-mask(rootdepth.grd, catchment_temp.shp)
   
   # 2.3.1c For now, add catchment aggregate soils data to soils with missing data
   soils_temp.shp@data$y_cl[is.na(soils_temp.shp@data$y_cl)]<-mean(soils_temp.shp@data$y_cl, na.rm=T)
@@ -298,14 +292,21 @@ fun<-function(WetID){ #
                      cellStats(temp_fac,max)/cellStats(fac_temp.grd,max),
                      0)
     
-    # v. Calculate relative wetland datum
+    # iv. Calculate relative wetland datum
     dz<-cellStats(mask(dem_temp.grd, wetlands_temp.shp[i,]), median, na.rm=T)- #median elevation of wetland elevation
       cellStats(mask(dem_temp.grd, wetlands_temp.shp[wetlands_temp.shp$WetID!=WetID,]), median, na.rm=T) #median elevation of all wetlands
     dz<-ifelse(is.na(dz)==TRUE, 0, dz)
     dz<-ifelse(dz==Inf, 0, dz)
     dz<-dz*1000
     
-    # iv. Populate giw.INFO table
+    # v. Calcluate wetland rooting depth
+    temp_rd<-crop(root_temp.grd, wetlands_temp.shp[i,])
+    temp_rd<-mask(temp_rd, wetlands_temp.shp[i,])
+    temp_rd<-ifelse(cellStats(temp_rd*0+1, sum)>0,
+                     cellStats(temp_rd,max)/cellStats(root_temp.grd,max),
+                     0)
+
+    # vi. Populate giw.INFO table
     giw.INFO[i,"giw.ID"]<-         i  #ID used in the model, note this is differnt than the WetID
     giw.INFO[i,"WetID"]<-          wetlands_temp.shp$WetID[i]
     giw.INFO[i,"area_watershed"]<- gArea(catchment_temp.shp)*(10^6)
@@ -318,7 +319,9 @@ fun<-function(WetID){ #
     giw.INFO[i,"y_c"]<-            - temp_soils["y_rd"]/2                       #critical depth (mm) 
     giw.INFO[i,"s_wilt"]<-         temp_soils["s_w"]/100                       # soil moisture at permanent wilting point
     giw.INFO[i,"k_sat"]<-          -temp_soils["ksat"]*24                      # saturated condcuctivity (mm/day)
-    giw.INFO[i,"RD"]<-             -temp_soils["y_rd"]                         # Rooting Depth (mm)
+    giw.INFO[i,"RD"]<-             ifelse((temp_rd*1000)<temp_soils["y_cl"],   # Rooting Depth (mm)
+                                      -1*temp_rd*1000,
+                                      -1*temp_soils["y_cl"])
     giw.INFO[i,"b"]<-              12.524*(temp_soils["clay"]/100)+3.6907 
     giw.INFO[i,"Sy"]<-             giw.INFO[i,"n"]*(1-giw.INFO[i,"s_fc"])
     giw.INFO[i,"y_w_0"]<-          0
@@ -348,7 +351,11 @@ fun<-function(WetID){ #
   temp_soils<-temp_soils@data
   temp_soils<-colSums(temp_soils[,c("y_cl","y_rd","s_fc","s_w","n","clay","ksat")]*temp_soils[,"area"])/sum(temp_soils$area, na.rm=T)
   
-  # 2.3.4d Populate land.INFO matrix (lenghth units in mm)
+  # 2.3.4d Rooting depth calculation
+  RD<- cellStats(root_temp.grd, mean, na.rm=T)*1000
+  RD<- ifelse(RD<temp_soils["y_cl"], -1*RD, -1*temp_soils["y_cl"])
+  
+  # 2.3.4e Populate land.INFO matrix (lenghth units in mm)
   land.INFO[,"area"]<-            gArea(catchment_temp.shp)*(10^6)            # area in mm^2
   land.INFO[,"n"]<-               temp_soils["n"]                             # porisity
   land.INFO[,"s_fc"]<-            temp_soils["s_fc"]/100                      # soil moisture at field capacity 
@@ -357,7 +364,7 @@ fun<-function(WetID){ #
   land.INFO[,"y_c"]<-             -temp_soils["y_rd"]/2                       # critical depth (mm) 
   land.INFO[,"s_wilt"]<-          temp_soils["s_w"]/100                       # soil moisture at permanent wilting point
   land.INFO[,"k_sat"]<-           -temp_soils["ksat"]*24                      # saturated condcuctivity (mm/day)
-  land.INFO[,"RD"]<-              -temp_soils["y_rd"]                         # Rooting Depth (mm)
+  land.INFO[,"RD"]<-              RD                                          # Rooting Depth (mm)
   land.INFO[,"b"]<-               12.524*(temp_soils["clay"]/100)+3.6907      # Presssure Head Power-Law Coefficient (b) --Relationship developed from Clapp and Hornberger, 1978
   land.INFO[,"y_wt_0"]<-          0
   land.INFO[,"s_t_0"]<-           land.INFO[,"s_fc"]

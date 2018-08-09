@@ -26,27 +26,27 @@ setwd(wd)                                                                   # Se
 
 # 1d. Obtain Model Inputs ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # Download Model Inputs (and put everything in a uniform projection)
-load("inputs/climate.Rdata")                                                # Climate data from Delmarva_HUC12_Climate_Data
-wetlands.shp<-readOGR("inputs/.","NWI")                                     # Import wetland shapefile
+load("inputs/climate.Rdata")                                            # Climate data from Delmarva_HUC12_Climate_Data
+wetlands.shp<-readOGR("inputs/.","NWI")                                 # Import wetland shapefile
 wetlands.shp@data$WetID<-seq(1,length(wetlands.shp))                    # add (?) WetID column to shp file using sequence from 1:total num of wetlands
-HUC12.shp<-readOGR("inputs/.","HUC12")                                      # Import HUC 12 shapefile
+HUC12.shp<-readOGR("inputs/.","HUC12")                                  # Import HUC 12 shapefile
 HUC12.shp<-spTransform(HUC12.shp, wetlands.shp@proj4string)             # transform HUC 12 shapefile's projection into same as wetlands
-catchments.shp<-readOGR("inputs/.","NHD_catchments")                        # import NHD catchments
+catchments.shp<-readOGR("inputs/.","NHD_catchments")                    # import NHD catchments
 catchments.shp<-spTransform(catchments.shp, wetlands.shp@proj4string)   # transform NHD catchment's projection into same as wetlands
-flowlines.shp<-readOGR("inputs/.","NHDplus")                                # import NHD flowlines
+flowlines.shp<-readOGR("inputs/.","NHDplus")                            # import NHD flowlines
 flowlines.shp<-spTransform(flowlines.shp, wetlands.shp@proj4string)     # transform NHD flowline's projection into same as wetlands
-fac.grd<-raster("inputs/fac")                                               # import flow accumulation raster
-soils.shp<-readOGR("inputs/.","soils")                                      # import soils shapefile
+fac.grd<-raster("inputs/fac")                                           # import flow accumulation raster
+soils.shp<-readOGR("inputs/.","soils")                                  # import soils shapefile
 soils.shp<-spTransform(soils.shp, wetlands.shp@proj4string)             # transform soil file's projection into same as wetlands
 soils<-read.csv("inputs/WHC_Soils_Input.csv")                           # import existing soil parameters csv
 soils.shp@data<-merge(soils.shp@data,soils, by.x='MUKEY', by.y="MUID")  # append soils csv data into soils shapefile by matching MUKEY and MUID
 remove(soils)                                                           # delete soils df
-dem.grd<-raster("inputs/NHDPlus02/Elev_Unit_a/elev_cm")                     # import DEM file
+dem.grd<-raster("inputs/NHDPlus02/Elev_Unit_a/elev_cm")                 # import DEM file
 mask<-spTransform(catchments.shp, dem.grd@crs)                          # transform file's projection
 dem.grd<-crop(dem.grd, mask)                                            # crop out portion of dem to keep relevant areas only
 remove(mask)                                                            # remove dummy variable mask
 dem.grd<-projectRaster(dem.grd, crs=catchments.shp@proj4string)         # project raster
-nfw_centroid.shp<-readOGR("inputs/.","NFW_centroids")                       # NFW from Lane and D'Amico 2016
+nfw_centroid.shp<-readOGR("inputs/.","NFW_centroids")                   # NFW from Lane and D'Amico 2016
 nfw_centroid.shp<-spTransform(nfw_centroid.shp, wetlands.shp@proj4string)
 
 # 1e. Delineate "Isolated" Wetlands  (Use NFW from Lane and D'Amico 2016) ~~~~~~~~~~~~~
