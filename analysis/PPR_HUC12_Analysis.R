@@ -40,7 +40,7 @@ fac.grd<-raster("Model_inputs/fac2")                                    # import
 soils.shp<-readOGR("Model_inputs/.","soils")                            # import soils shapefile
   soils.shp<-spTransform(soils.shp, p)                                  # transform soil file's projection into same as wetlands
   soils<-read.csv("Model_inputs/WHC_Soils_Input.csv")                   # import existing soil parameters csv
-  soils.shp@data<-merge(soils.shp@data,soils, by.x='MUKEY', by.y="MUID")# append soils csv data into soils shapefile by matching MUKEY and MUID
+  soils.shp@data<-merge(soils.shp@data,soils, by.x='MUKEY', by.y="mukey")# append soils csv data into soils shapefile by matching MUKEY and MUID
   remove(soils)                                                         # delete soils df
 dem.grd<-raster("Model_inputs/dem_cm")                                  # import DEM file
   mask<-spTransform(catchments.shp, dem.grd@crs)                        # transform file's projection
@@ -78,7 +78,7 @@ save.image("backup/Inputs.Rdata")                                           # sa
 ####################################################################################
 # 2.1 Set Up workspace ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 remove(list=ls())                                                           # clear environment
-wd<-"//nfs/WHC-data/Regional_Analysis/PPR/"                             # Define working directory for later reference
+wd<-"//nfs/WHC-data/Regional_Analysis/PPR/"                                 # Define working directory for later reference
 setwd(wd)                                                                   # Set working directory
 load("backup/Inputs.Rdata")                                                 # load inputs from previous processing
 source("~/Wetland_Hydrologic_Capacitance_Model/R/WHC_2.R")                  # compile WHC function 
