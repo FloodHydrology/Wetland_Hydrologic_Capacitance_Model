@@ -19,6 +19,7 @@ library(rgeos)       # for spatial analysis
 library(dplyr)       # for data processing
 library(rslurm)      # parallel computing
 library(geosphere)   # for spatial analysis
+library(parallel)    # parallel computing
 
 # 1c. Define Master Working Directory ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 wd<-"//nfs/WHC-data/Regional_Analysis/PPR/"    # Define working directory for later reference
@@ -39,7 +40,7 @@ flowlines.shp<-readOGR("Model_inputs/.","flow_net")                     # import
 fac.grd<-raster("Model_inputs/fac2")                                    # import flow accumulation raster
 soils.shp<-readOGR("Model_inputs/.","soils")                            # import soils shapefile
   soils.shp<-spTransform(soils.shp, p)                                  # transform soil file's projection into same as wetlands
-  soils<-read.csv("Model_inputs/WHC_Soils_Input_PPR.csv")                   # import existing soil parameters csv
+  soils<-read.csv("Model_inputs/WHC_Soils_Input_PPR.csv")               # import existing soil parameters csv
   soils.shp@data<-merge(soils.shp@data,soils, by.x='MUKEY', by.y="MUID")# append soils csv data into soils shapefile by matching MUKEY and MUID
   remove(soils)                                                         # delete soils df
 dem.grd<-raster("Model_inputs/dem_cm")                                  # import DEM file
@@ -59,19 +60,19 @@ wetlands.shp$area_m2<-gArea(wetlands.shp,byid=T)                                
 wetlands.shp<-wetlands.shp[nfw_centroid.shp,]
 
 # 1f. Alternate distances ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-wetlandCentroid <- centroid(wetlands.shp)                                   # get centroid of each wetland
-distMat <- pointDistance(wetlandCentroid, lonlat = FALSE)                   # get the distances to each other point
-diag(distMat) <- NA                                                         # replace the diagonal's zeros with NAs
-wetlands.shp$dist2NearWet <- apply(distMat, 1, min, na.rm=TRUE)/2           # put the half distances into variable
+wetlandCentroid <- centroid(wetlands.shp)                          # get centroid of each wetland
+distMat <- pointDistance(wetlandCentroid, lonlat = FALSE)          # get the distances to each other point
+diag(distMat) <- NA                                                # replace the diagonal's zeros with NAs
+wetlands.shp$dist2NearWet <- apply(distMat, 1, min, na.rm=TRUE)/2  # put the half distances into variable
 
 # 1g. Plot for funzies ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-plot(HUC12.shp, lwd=2, border="grey10")                                     # plot overall HUC12 outline 
-plot(catchments.shp, lwd=0.5, border="grey50", add=T)                       # plot interior catchments
-plot(flowlines.shp, lwd=0.5, col="dark blue", add=T)                        # plot NHD flowlines
-plot(wetlands.shp, col="dark blue", add=T)                                  # plot wetlands
+plot(HUC12.shp, lwd=2, border="grey10")               # plot overall HUC12 outline 
+plot(catchments.shp, lwd=0.5, border="grey50", add=T) # plot interior catchments
+plot(flowlines.shp, lwd=0.5, col="dark blue", add=T)  # plot NHD flowlines
+plot(wetlands.shp, col="dark blue", add=T)            # plot wetlands
 
 # 1h. Save Image ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-save.image("backup/Inputs.Rdata")                                           # save workspace for use later
+save.image("backup/Inputs.Rdata")   # save workspace for use later
 
 ####################################################################################
 # Step 2: Create Function to run individual wetlands--------------------------------
@@ -100,7 +101,7 @@ divide_dist.fun<-function(cat){
   cat.grd<-boundaries(cat.grd, type="inner")
   cat.grd[cat.grd==0]<-NA
   cat.pnt<-rasterToPoints(cat.grd)
-  cat.pnt<-SpatialPoints(cat.pnt)
+  if(nrow(cat.pnt)>0){cat.pnt<-SpatialPoints(cat.pnt)}
   
   #c. Clip relevant wetlands
   wetlands.shp<-wetlands.shp[cat.shp,]
@@ -171,19 +172,20 @@ divide_dist.fun<-function(cat){
   }
 }
 
-# 2.2.2 Run on the slurm server
-sopts <- list(partition = "sesync", time= "1:00:00")
-params<-data.frame(cat=seq(1,length(catchments.shp)))
-flowpath_job<- slurm_apply(divide_dist.fun, params,
-                           add_objects = c("catchments.shp","wetlands.shp"),
-                           nodes = 4, cpus_per_node=8,
-                           pkgs=c('sp','raster','rgdal','rgeos','geosphere'),
-                           slurm_options = sopts)
-results <- get_slurm_out(flowpath_job, outtype = "table")
-cleanup_files(flowpath_job)
+# 2.2.2 Use mclapply to run function
+t0<-Sys.time()
+results<-mclapply(
+  X=seq(1, length(catchments.shp)), 
+  FUN=divide_dist.fun, 
+  mc.silent = T, 
+  mc.cores = detectCores()
+)
+tf<-Sys.time()
+tf-t0
 
 # 2.2.3 collect results and clean output
 #Print results and clean
+results<-do.call(rbind, results)
 results<-data.frame(results)
 colnames(results)<-c("WetID","dLe")
 results<-results[results$WetID!=0,]
@@ -307,7 +309,7 @@ fun<-function(WetID){ #
     temp_rd<-mask(temp_rd, wetlands_temp.shp[i,])
     temp_rd<-ifelse(cellStats(temp_rd*0+1, sum)>0,
                      cellStats(temp_rd,max)/cellStats(root_temp.grd,max),
-                     0)
+                     0.1)
 
     # vi. Populate giw.INFO table
     giw.INFO[i,"giw.ID"]<-         i  #ID used in the model, note this is differnt than the WetID
@@ -399,7 +401,15 @@ fun<-function(WetID){ #
   n.years<-1000
   execute<-function(n.years){
     #i. Run WHC Model w/ tryCatch
-    output<-tryCatch(wetland.hydrology(giw.INFO,land.INFO, lumped.INFO, precip.VAR, pet.VAR, n.years, area, volume, giw.ID),
+    output<-tryCatch(wetland.hydrology(giw.INFO,
+                                       land.INFO, 
+                                       lumped.INFO, 
+                                       precip.VAR, 
+                                       pet.VAR, 
+                                       n.years, 
+                                       area, 
+                                       volume, 
+                                       giw.ID),
                      error = function(e) data.frame(matrix(0,ncol=390,nrow=1)))
     
     #ii. Organize output 
@@ -439,25 +449,31 @@ fun<-function(WetID){ #
       shift<-precip.VAR[1:(n.years*365)]+c(0,precip.VAR[1:(n.years*365-1)])
       precip.VAR<-c(precip.VAR,0)
       shift<-c(shift,0)
-      duration<-data.frame(#Quick Flow
-                           QFin_duration   = length(spill_vol.VAR[shift!=0,2])/n.years/2,
-                           QFin_magnitude  = (sum(spill_vol.VAR[shift!=0,2])*giw.INFO[,"vol_ratio"] +
-                                              sum(runoff_vol.VAR[shift!=0,1]*giw.INFO[,"vol_ratio"]) +
-                                              sum(GWin[shift!=0]))/precip_vol,
-                           QFout_duration  = length(spill_vol.VAR[shift!=0 & spill_vol.VAR[,3]!=0,3])/n.years, 
-                           QFout_magnitude = sum(spill_vol.VAR[shift!=0,3])/precip_vol,
+      duration<-data.frame(
+        #Quick Flow
+        QFin_duration   = length(spill_vol.VAR[shift!=0,2])/n.years/2,
+        QFin_magnitude  = (sum(spill_vol.VAR[shift!=0,2])*giw.INFO[,"vol_ratio"] +
+                           sum(runoff_vol.VAR[shift!=0,1]*giw.INFO[,"vol_ratio"]) +
+                           sum(GWin[shift!=0]))/precip_vol,
+        QFout_duration  = length(spill_vol.VAR[shift!=0 & spill_vol.VAR[,3]!=0,3])/n.years, 
+        QFout_magnitude = sum(spill_vol.VAR[shift!=0,3])/precip_vol,
                            
-                           #Surface water fluxes
-                           SWin_duration   = length(spill_vol.VAR[shift==0 & spill_vol.VAR[,2]>0])/n.years, 
-                           SWin_magnitude  = (sum(spill_vol.VAR[shift==0,2])+sum(runoff_vol.VAR[shift==0,1]))*giw.INFO[,"vol_ratio"]/precip_vol,
-                           SWout_duration  = length(spill_vol.VAR[shift==0 & spill_vol.VAR[,3]>0])/n.years,
-                           SWout_magnitude = sum(spill_vol.VAR[shift==0,3])/precip_vol,
+        #Surface water fluxes
+        SWin_duration   = length(spill_vol.VAR[shift==0 & spill_vol.VAR[,2]>0])/n.years, 
+        SWin_magnitude  = (sum(spill_vol.VAR[shift==0,2])+sum(runoff_vol.VAR[shift==0,1]))*giw.INFO[,"vol_ratio"]/precip_vol,
+        SWout_duration  = length(spill_vol.VAR[shift==0 & spill_vol.VAR[,3]>0])/n.years,
+        SWout_magnitude = sum(spill_vol.VAR[shift==0,3])/precip_vol,
                            
-                           #Groundwater Fluxes
-                           GWin_duration   = length(GWin[GWin>0 & shift==0])/n.years,
-                           GWin_magnitude  = sum(GWin[GWin>0 & shift==0])/precip_vol,
-                           GWout_duration  = length(GWout[GWout>0])/n.years,
-                           GWout_magnitude = sum(GWout[GWout>0])/precip_vol)
+        #Groundwater Fluxes
+        GWin_duration   = length(GWin[GWin>0 & shift==0])/n.years,
+        GWin_magnitude  = sum(GWin[GWin>0 & shift==0])/precip_vol,
+        GWout_duration  = length(GWout[GWout>0])/n.years,
+        GWout_magnitude = sum(GWout[GWout>0])/precip_vol
+      )
+      
+      #detach output variables
+      detach(output)
+      
       #Combine data
       output<-cbind(giw.INFO, water_balance, duration, y_w)
     }
@@ -493,14 +509,14 @@ save.image("backup/Model_Setup.Rdata")
 ####################################################################################
 # 3.1 Set Up workspace ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 remove(list=ls())                                # clear environment
-wd<-"//nfs/WHC-data/Regional_Analysis/Delmarva"  # Define working directory for later reference
+wd<-"//nfs/WHC-data/Regional_Analysis/PPR"        # Define working directory for later reference
 setwd(wd)                                        # Set working directory
 load("backup/Model_Setup.Rdata")                 # load inputs from previous processing
 
 # 3.2 Run the Model ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 t0<-Sys.time()
-sopts <- list(partition = "sesync", time = "12:00:00" )
-params<-data.frame(WetID=wetlands.shp$WetID)
+sopts <- list(partition = "sesynctest", time = "1:00:00" )
+params<-data.frame(WetID=wetlands.shp$WetID[1:8])
 delmarva<- slurm_apply(fun, params,
                        add_objects = c(
                          #Functions
@@ -510,7 +526,7 @@ delmarva<- slurm_apply(fun, params,
                          "soils.shp","wetlands.shp","dem.grd",
                          #Climate data
                          "precip.VAR", "pet.VAR"),
-                       nodes = 4, cpus_per_node=8,
+                       nodes = 1, cpus_per_node=8,
                        pkgs=c('sp','raster','rgdal','rgeos','dplyr'),
                        slurm_options = sopts)
 

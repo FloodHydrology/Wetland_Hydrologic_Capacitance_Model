@@ -337,7 +337,7 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
     #Water Table
     ET_wt.VAR[day,"land"]<<-ifelse(y_sat.VAR[day,"land"]>land.INFO[,"y_c"],
                                    pet.VAR[day],
-                                   pet.VAR[day]*exp(y_hm.VAR[day,"land"]/abs(land.INFO[,"RD"]))) #Equation 5 McLaughlin et al 2014
+                                   pet.VAR[day]*exp(abs(y_hm.VAR[day,"land"])/abs(land.INFO[,"RD"]))) #Equation 5 McLaughlin et al 2014
     
     #Potential ET for LMZ
     PET_lm<-pet.VAR[day]-ET_wt.VAR[day,"land"]
