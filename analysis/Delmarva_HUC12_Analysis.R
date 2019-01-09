@@ -54,7 +54,6 @@ wetlands.shp$dist2stream<-apply(gDistance(flowlines.shp,wetlands.shp, byid=TRUE)
 wetlands.shp$area_m2<-gArea(wetlands.shp,byid=T)                                        # Caclculate wetland area
 wetlands.shp<-wetlands.shp[nfw_centroid.shp,]
 
-
 # 1f. Alternate distances ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 wetlandCentroid <- centroid(wetlands.shp)                                   # get centroid of each wetland
 distMat <- pointDistance(wetlandCentroid, lonlat = FALSE)                   # get the distances to each other point
@@ -74,12 +73,12 @@ save.image("backup/Inputs.Rdata")                                           # sa
 # Step 2: Create Function to run individual wetlands--------------------------------
 ####################################################################################
 # 2.1 Set Up workspace ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-remove(list=ls())                                                           # clear environment
-wd<-"//nfs/WHC-data/Regional_Analysis/Delmarva"                             # Define working directory for later reference
-setwd(wd)                                                                   # Set working directory
-load("backup/Inputs.Rdata")                                                 # load inputs from previous processing
-source("~/Wetland_Hydrologic_Capacitance_Model/R/WHC_2.R")                  # compile WHC function 
-source("~/Wetland_Hydrologic_Capacitance_Model/R/get_yc.R")                 # compile yc 
+remove(list=ls())                                            # clear environment
+wd<-"//nfs/WHC-data/Regional_Analysis/Delmarva"              # Define working directory for later reference
+setwd(wd)                                                    # Set working directory
+load("backup/Inputs.Rdata")                                  # load inputs from previous processing
+source("~/Wetland_Hydrologic_Capacitance_Model/R/WHC_2.R")   # compile WHC function 
+source("~/Wetland_Hydrologic_Capacitance_Model/R/get_yc.R")  # compile yc 
 
 # 2.2 Calculate flowpath lengths for individual wetlands~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # 2.2.1 Create function to cacluate distance from wetland edge to "groundwater inflection" point
@@ -173,7 +172,7 @@ sopts <- list(partition = "sesync", time= "1:00:00")
 params<-data.frame(cat=seq(1,length(catchments.shp)))
 flowpath_job<- slurm_apply(divide_dist.fun, params,
                            add_objects = c("catchments.shp","wetlands.shp"),
-                           nodes = 20, cpus_per_node=8,
+                           nodes = 4, cpus_per_node=8,
                            pkgs=c('sp','raster','rgdal','rgeos','geosphere'),
                            slurm_options = sopts)
 results <- get_slurm_out(flowpath_job, outtype = "table")
@@ -471,10 +470,10 @@ save.image("backup/Model_Setup.Rdata")
 # Step 3: Run function -------------------------------------------------------------
 ####################################################################################
 # 3.1 Set Up workspace ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-remove(list=ls())                                                           # clear environment
-wd<-"//nfs/WHC-data/Regional_Analysis/Delmarva"                             # Define working directory for later reference
-setwd(wd)                                                                   # Set working directory
-load("backup/Model_Setup.Rdata")                                            # load inputs from previous processing
+remove(list=ls())                                 # clear environment
+wd<-"//nfs/WHC-data/Regional_Analysis/Delmarva"   # Define working directory for later reference
+setwd(wd)                                         # Set working directory
+load("backup/Model_Setup.Rdata")                  # load inputs from previous processing
 
 # 3.2 Run the Model ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 t0<-Sys.time()
@@ -489,7 +488,7 @@ delmarva<- slurm_apply(fun, params,
                          "soils.shp","wetlands.shp","dem.grd",
                          #Climate data
                          "precip.VAR", "pet.VAR"),
-                       nodes = 20, cpus_per_node=8,
+                       nodes = 8, cpus_per_node=8,
                        pkgs=c('sp','raster','rgdal','rgeos','dplyr'),
                        slurm_options = sopts)
 

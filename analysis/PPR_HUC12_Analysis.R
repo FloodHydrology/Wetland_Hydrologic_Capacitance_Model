@@ -39,8 +39,8 @@ flowlines.shp<-readOGR("Model_inputs/.","flow_net")                     # import
 fac.grd<-raster("Model_inputs/fac2")                                    # import flow accumulation raster
 soils.shp<-readOGR("Model_inputs/.","soils")                            # import soils shapefile
   soils.shp<-spTransform(soils.shp, p)                                  # transform soil file's projection into same as wetlands
-  soils<-read.csv("Model_inputs/WHC_Soils_Input.csv")                   # import existing soil parameters csv
-  soils.shp@data<-merge(soils.shp@data,soils, by.x='MUKEY', by.y="mukey")# append soils csv data into soils shapefile by matching MUKEY and MUID
+  soils<-read.csv("Model_inputs/WHC_Soils_Input_PPR.csv")                   # import existing soil parameters csv
+  soils.shp@data<-merge(soils.shp@data,soils, by.x='MUKEY', by.y="MUID")# append soils csv data into soils shapefile by matching MUKEY and MUID
   remove(soils)                                                         # delete soils df
 dem.grd<-raster("Model_inputs/dem_cm")                                  # import DEM file
   mask<-spTransform(catchments.shp, dem.grd@crs)                        # transform file's projection
@@ -77,12 +77,12 @@ save.image("backup/Inputs.Rdata")                                           # sa
 # Step 2: Create Function to run individual wetlands--------------------------------
 ####################################################################################
 # 2.1 Set Up workspace ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-remove(list=ls())                                                           # clear environment
-wd<-"//nfs/WHC-data/Regional_Analysis/PPR/"                                 # Define working directory for later reference
-setwd(wd)                                                                   # Set working directory
-load("backup/Inputs.Rdata")                                                 # load inputs from previous processing
-source("~/Wetland_Hydrologic_Capacitance_Model/R/WHC_2.R")                  # compile WHC function 
-source("~/Wetland_Hydrologic_Capacitance_Model/R/get_yc.R")                 # compile yc 
+remove(list=ls())                                           # clear environment
+wd<-"//nfs/WHC-data/Regional_Analysis/PPR/"                 # Define working directory for later reference
+setwd(wd)                                                   # Set working directory
+load("backup/Inputs.Rdata")                                 # load inputs from previous processing
+source("~/Wetland_Hydrologic_Capacitance_Model/R/WHC_2.R")  # compile WHC function 
+source("~/Wetland_Hydrologic_Capacitance_Model/R/get_yc.R") # compile yc 
 
 # 2.2 Calculate flowpath lengths for individual wetlands~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # 2.2.1 Create function to cacluate distance from wetland edge to "groundwater inflection" point
@@ -176,7 +176,7 @@ sopts <- list(partition = "sesync", time= "1:00:00")
 params<-data.frame(cat=seq(1,length(catchments.shp)))
 flowpath_job<- slurm_apply(divide_dist.fun, params,
                            add_objects = c("catchments.shp","wetlands.shp"),
-                           nodes = 20, cpus_per_node=8,
+                           nodes = 4, cpus_per_node=8,
                            pkgs=c('sp','raster','rgdal','rgeos','geosphere'),
                            slurm_options = sopts)
 results <- get_slurm_out(flowpath_job, outtype = "table")
@@ -195,6 +195,9 @@ wetlands.shp@data<-merge(wetlands.shp@data, results, by="WetID")
 
 # 2.3 Create function to process data and run WHC for a wetland of interest~~~~~~~~~
 fun<-function(WetID){ #
+  
+  #for testing
+  #WetID<-wetlands.shp@data$WetID[1]
   
   # 2.3.1 Gather Required Data~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # 2.3.1a Identify wetland of interest
@@ -489,10 +492,10 @@ save.image("backup/Model_Setup.Rdata")
 # Step 3: Run function -------------------------------------------------------------
 ####################################################################################
 # 3.1 Set Up workspace ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-remove(list=ls())                                                           # clear environment
-wd<-"//nfs/WHC-data/Regional_Analysis/Delmarva"                             # Define working directory for later reference
-setwd(wd)                                                                   # Set working directory
-load("backup/Model_Setup.Rdata")                                            # load inputs from previous processing
+remove(list=ls())                                # clear environment
+wd<-"//nfs/WHC-data/Regional_Analysis/Delmarva"  # Define working directory for later reference
+setwd(wd)                                        # Set working directory
+load("backup/Model_Setup.Rdata")                 # load inputs from previous processing
 
 # 3.2 Run the Model ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 t0<-Sys.time()
@@ -507,7 +510,7 @@ delmarva<- slurm_apply(fun, params,
                          "soils.shp","wetlands.shp","dem.grd",
                          #Climate data
                          "precip.VAR", "pet.VAR"),
-                       nodes = 20, cpus_per_node=8,
+                       nodes = 4, cpus_per_node=8,
                        pkgs=c('sp','raster','rgdal','rgeos','dplyr'),
                        slurm_options = sopts)
 
