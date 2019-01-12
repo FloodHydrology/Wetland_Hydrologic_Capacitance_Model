@@ -34,12 +34,11 @@ regional_analysis<-function(WetID,
   
   # 1.3 For now, add catchment aggregate soils data to soils with missing data
   soils_temp.shp$y_cl[is.na(soils_temp.shp$y_cl)]<-mean(soils_temp.shp$y_cl, na.rm=T)
-  #soils_temp.shp$y_rd[is.na(soils_temp.shp$y_rd)]<-mean(soils_temp.shp$y_rd, na.rm=T)
-  soils_temp.shp@data$s_fc[is.na(soils_temp.shp@data$s_fc)]<-mean(soils_temp.shp@data$s_fc, na.rm=T)
-  soils_temp.shp@data$s_w[is.na(soils_temp.shp@data$s_w)]<-mean(soils_temp.shp@data$s_w, na.rm=T)
-  soils_temp.shp@data$n[is.na(soils_temp.shp@data$n)]<-mean(soils_temp.shp@data$n, na.rm=T)
-  soils_temp.shp@data$clay[is.na(soils_temp.shp@data$clay)]<-mean(soils_temp.shp@data$clay, na.rm=T)
-  soils_temp.shp@data$ksat[is.na(soils_temp.shp@data$ksat)]<-mean(soils_temp.shp@data$ksat, na.rm=T)
+  soils_temp.shp$s_fc[is.na(soils_temp.shp$s_fc)]<-mean(soils_temp.shp$s_fc, na.rm=T)
+  soils_temp.shp$s_w[is.na(soils_temp.shp$s_w)]<-mean(soils_temp.shp$s_w, na.rm=T)
+  soils_temp.shp$n[is.na(soils_temp.shp$n)]<-mean(as.numeric(paste(soils_temp.shp$n)), na.rm=T)
+  soils_temp.shp$clay[is.na(soils_temp.shp$clay)]<-mean(soils_temp.shp$clay, na.rm=T)
+  soils_temp.shp$ksat[is.na(soils_temp.shp$ksat)]<-mean(soils_temp.shp$ksat, na.rm=T)
   
   # 2 Estimate area and volume to stage relationships~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # 2.1 Create vectors to store area and volume to stage relationships
@@ -100,7 +99,7 @@ regional_analysis<-function(WetID,
     # b. Agregrate parameters based on space
     temp_soils$area<-gArea(temp_soils, byid=T)
     temp_soils<-temp_soils@data
-    temp_soils<-colSums(temp_soils[,c("y_cl","s_fc","s_w","n","clay","ksat")]*temp_soils[,"area"])/sum(temp_soils$area, na.rm=T)
+    temp_soils<-colSums(temp_soils[,c("y_c","y_cl","s_fc","s_w","n","clay","ksat")]*temp_soils[,"area"])/sum(temp_soils$area, na.rm=T)
     
     # c. Isolate fac data and calculate ratio of upland drainage area to total drainage area
     temp_fac<-crop(fac_temp.grd, wetlands_temp.shp[i,])
@@ -133,7 +132,7 @@ regional_analysis<-function(WetID,
     giw.INFO[i,"s_fc"]<-           temp_soils["s_fc"]/100
     giw.INFO[i,"psi"]<-            -16662*(temp_soils["n"]^7.8831)
     giw.INFO[i,"y_cl"]<-           -1*temp_soils["y_cl"]
-    giw.INFO[i,"y_c"]<-            - temp_soils["y_rd"]/2                       #critical depth (mm)
+    giw.INFO[i,"y_c"]<-            - temp_soils["y_c"]                       #critical depth (mm)
     giw.INFO[i,"s_wilt"]<-         temp_soils["s_w"]/100                       # soil moisture at permanent wilting point
     giw.INFO[i,"k_sat"]<-          -temp_soils["ksat"]*24                      # saturated condcuctivity (mm/day)
     giw.INFO[i,"RD"]<-             ifelse((temp_rd*1000)<temp_soils["y_cl"],   # Rooting Depth (mm)
@@ -166,7 +165,7 @@ regional_analysis<-function(WetID,
   temp_soils<-soils_temp.shp
   temp_soils$area<-gArea(temp_soils, byid=T)
   temp_soils<-temp_soils@data
-  temp_soils<-colSums(temp_soils[,c("y_cl","s_fc","s_w","n","clay","ksat")]*temp_soils[,"area"])/sum(temp_soils$area, na.rm=T)
+  temp_soils<-colSums(temp_soils[,c("y_c","y_cl","s_fc","s_w","n","clay","ksat")]*temp_soils[,"area"])/sum(temp_soils$area, na.rm=T)
   
   # 4.4 Rooting depth calculation
   RD<- cellStats(root_temp.grd, mean, na.rm=T)*1000
@@ -178,7 +177,7 @@ regional_analysis<-function(WetID,
   land.INFO[,"s_fc"]<-            temp_soils["s_fc"]/100                      # soil moisture at field capacity
   land.INFO[,"psi"]<-             -16662*(temp_soils["n"]^7.8831)             # air entry pressure head (mm) --Relationship developed from Clapp and Hornberger, 1978
   land.INFO[,"y_cl"]<-            -1*temp_soils["y_cl"]                       # confining layer depth (mm) from SSURGO
-  land.INFO[,"y_c"]<-             -temp_soils["y_rd"]/2                       # critical depth (mm)
+  land.INFO[,"y_c"]<-             -temp_soils["y_c"]                          # critical depth (mm)
   land.INFO[,"s_wilt"]<-          temp_soils["s_w"]/100                       # soil moisture at permanent wilting point
   land.INFO[,"k_sat"]<-           -temp_soils["ksat"]*24                      # saturated condcuctivity (mm/day)
   land.INFO[,"RD"]<-              RD                                          # Rooting Depth (mm)
