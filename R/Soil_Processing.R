@@ -13,16 +13,15 @@
 #Clear Memory
 rm(list=ls(all=TRUE))
 
-#Set Working Directory
-wd<-"/nfs/WHC-data/Soil Database (SSURGO Conversion)"
-setwd(paste0(wd))
-
 #add appropriate libarary
 library(parallel)
 library(foreign)
 library(data.table)
 library(dplyr)
 library(magrittr)
+
+#Download Fred's get_yc function!
+source("R/get_yc.R")
 
 ####################################################################################
 #Step 2: Create function to calculate values---------------------------------------
@@ -51,6 +50,7 @@ fun<-function(n){
                            group_by(cokey) %>%
                            summarise(y_cl = ifelse(min(ksat_r, na.rm=T)<1.25,min(hzdepb_r[ksat_r<1.25], na.rm=T), max(hzdepb_r, na.rm=T)), #clay layer depth [cm]
                                      clay = sum(claytotal_r*thickness, na.rm=T)/sum(thickness, na.rm=T),   # % clay
+                                     sand = sum(sandtotal_r*thickness, na.rm=T)/sum(thickness, na.rm=T),
                                      ksat = sum(ksat_r*thickness, na.rm=T)/sum(thickness, na.rm=T),        # ksat (um/s)
                                      s_fc = sum(wthirdbar_r*thickness, na.rm=T)/sum(thickness, na.rm=T),   # field capacity (%)
                                      s_w  = sum(wfifteenbar_r*thickness, na.rm=T)/sum(thickness, na.rm=T), # wilting point  (%)
@@ -63,11 +63,24 @@ fun<-function(n){
                     group_by(mukey) %>%
                     summarise(y_cl = sum(y_cl*comppct_r, na.rm=T)/100, #clay layer depth [cm]
                               clay = sum(clay*comppct_r, na.rm=T)/100, # % clay
+                              sand = sum(sand*comppct_r, na.rm=T)/100, # % sand
                               ksat = sum(ksat*comppct_r, na.rm=T)/100, # ksat (um/s)
                               s_fc = sum(s_fc*comppct_r, na.rm=T)/100, # field capacity (%)
                               s_w  = sum(s_w*comppct_r, na.rm=T)/100,  # wilting point  (%)
                               n    = sum(n*comppct_r, na.rm=T)/100     #porosity (%)
                     )
+  
+  #Estimate yc values using get_yc from Fred
+  get_yc<-function(mukey){
+    clay<-area_average_mu$clay[area_average_mu$mukey==mukey]
+    sand<-area_average_mu$sand[area_average_mu$mukey==mukey]
+    y_c<-get.yc(clay, sand)
+    c(mukey, y_c)
+  }
+  y_c<-lapply(area_average_mu$mukey, get_yc)
+  y_c<-data.frame(do.call(rbind,y_c))
+  colnames(y_c)<-c("mukey", "y_c")
+  area_average_mu<-left_join(area_average_mu, y_c)
   
   #Export results output~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   area_average_mu
@@ -78,10 +91,9 @@ fun<-function(n){
 ####################################################################################
 #Temporarly change wd
 temp<-"/nfs/WHC-data/Data/SSURGO"
-setwd(paste0(temp))
 
 #create list of files containing soils data
-files<-list.files()
+files<-list.files(temp, full.names = T)
 
 #Create function to catch errors
 execute<-function(n){tryCatch(fun(n), error=function(e) c(files[n], rep(0,6)))}
@@ -98,3 +110,5 @@ output<-do.call(rbind,x)
 
 #Export Ouput
 write.csv(output, "/nfs/WHC-data/WHC_Soils_Input.csv")
+write.csv(output, "data/soils_lookup.csv")
+

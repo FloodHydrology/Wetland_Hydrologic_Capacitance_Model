@@ -40,21 +40,23 @@ regional_analysis(WetID=1,n.years =1000, pet.VAR,precip.VAR,wetlands.shp,HUC12.s
                   catchments.shp, flowlines.shp,fac.grd, soils.shp, dem.grd, 
                   nfw_centroid.shp, rootdepth.grd)
 
-sopts <- list(partition = "sesync", time = "12:00:00" )
-params<-data.frame(WetID=wetlands.shp$WetID, 
-                   n.years=10)
-delmarva<- slurm_apply(regional_analysis, params,
-                       add_objects = c(
-                         #Functions
-                         "wetland.hydrology",
-                         #Spatial data
-                         "fac.grd","catchments.shp","flowlines.shp",
-                         "soils.shp","wetlands.shp","dem.grd", "rootdepth.grd",
-                         #Climate data
-                         "precip.VAR", "pet.VAR"),
-                       nodes = 8, cpus_per_node=8,
-                       pkgs=c('sp','raster','rgdal','rgeos','dplyr'),
-                       slurm_options = sopts)
+
+
+# sopts <- list(partition = "sesync", time = "12:00:00" )
+# params<-data.frame(WetID=wetlands.shp$WetID, 
+#                    n.years=10)
+# delmarva<- slurm_apply(regional_analysis, params,
+#                        add_objects = c(
+#                          #Functions
+#                          "wetland.hydrology",
+#                          #Spatial data
+#                          "fac.grd","catchments.shp","flowlines.shp",
+#                          "soils.shp","wetlands.shp","dem.grd", "rootdepth.grd",
+#                          #Climate data
+#                          "precip.VAR", "pet.VAR"),
+#                        nodes = 8, cpus_per_node=8,
+#                        pkgs=c('sp','raster','rgdal','rgeos','dplyr'),
+#                        slurm_options = sopts)
 
 
 

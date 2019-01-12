@@ -33,8 +33,8 @@ regional_analysis<-function(WetID,
   root_temp.grd<-mask(rootdepth.grd, catchment_temp.shp)
   
   # 1.3 For now, add catchment aggregate soils data to soils with missing data
-  soils_temp.shp@data$y_cl[is.na(soils_temp.shp@data$y_cl)]<-mean(soils_temp.shp@data$y_cl, na.rm=T)
-  soils_temp.shp@data$y_rd[is.na(soils_temp.shp@data$y_rd)]<-mean(soils_temp.shp@data$y_rd, na.rm=T)
+  soils_temp.shp$y_cl[is.na(soils_temp.shp$y_cl)]<-mean(soils_temp.shp$y_cl, na.rm=T)
+  #soils_temp.shp$y_rd[is.na(soils_temp.shp$y_rd)]<-mean(soils_temp.shp$y_rd, na.rm=T)
   soils_temp.shp@data$s_fc[is.na(soils_temp.shp@data$s_fc)]<-mean(soils_temp.shp@data$s_fc, na.rm=T)
   soils_temp.shp@data$s_w[is.na(soils_temp.shp@data$s_w)]<-mean(soils_temp.shp@data$s_w, na.rm=T)
   soils_temp.shp@data$n[is.na(soils_temp.shp@data$n)]<-mean(soils_temp.shp@data$n, na.rm=T)
@@ -100,7 +100,7 @@ regional_analysis<-function(WetID,
     # b. Agregrate parameters based on space
     temp_soils$area<-gArea(temp_soils, byid=T)
     temp_soils<-temp_soils@data
-    temp_soils<-colSums(temp_soils[,c("y_cl","y_rd","s_fc","s_w","n","clay","ksat")]*temp_soils[,"area"])/sum(temp_soils$area, na.rm=T)
+    temp_soils<-colSums(temp_soils[,c("y_cl","s_fc","s_w","n","clay","ksat")]*temp_soils[,"area"])/sum(temp_soils$area, na.rm=T)
     
     # c. Isolate fac data and calculate ratio of upland drainage area to total drainage area
     temp_fac<-crop(fac_temp.grd, wetlands_temp.shp[i,])
@@ -166,7 +166,7 @@ regional_analysis<-function(WetID,
   temp_soils<-soils_temp.shp
   temp_soils$area<-gArea(temp_soils, byid=T)
   temp_soils<-temp_soils@data
-  temp_soils<-colSums(temp_soils[,c("y_cl","y_rd","s_fc","s_w","n","clay","ksat")]*temp_soils[,"area"])/sum(temp_soils$area, na.rm=T)
+  temp_soils<-colSums(temp_soils[,c("y_cl","s_fc","s_w","n","clay","ksat")]*temp_soils[,"area"])/sum(temp_soils$area, na.rm=T)
   
   # 4.4 Rooting depth calculation
   RD<- cellStats(root_temp.grd, mean, na.rm=T)*1000

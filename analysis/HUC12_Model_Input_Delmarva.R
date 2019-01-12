@@ -9,7 +9,7 @@
 # Step 1: Setup Worskspace ---------------------------------------------------------
 ####################################################################################
 # 1a. Clear Memory  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-rm(list=ls(all=TRUE))
+#rm(list=ls(all=TRUE))
 
 # 1b. Load Packages ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 library(sp)         # for spatial analysis
@@ -52,7 +52,7 @@ fac.grd<-projectRaster(fac.grd, crs=p)
 #2.6 soils
 soils.shp<-readOGR(paste0(wd,"inputs/."),"soils")                                    
 soils.shp<-spTransform(soils.shp, p)               
-soils.shp<-merge(soils.shp, read.csv("data/soils_lookup.csv"), by.x='MUKEY', by.y="MUID")
+soils.shp<-merge(soils.shp, read.csv("data/soils_lookup.csv"), by.x='MUKEY', by.y="mukey")
 
 #2.7 digital elevation model
 dem.grd<-raster(paste0(wd,"inputs/NHDPlus02/Elev_Unit_a/elev_cm"))                   
