@@ -1,6 +1,6 @@
 #Create function to process data and run WHC for a wetland of interest~~~~~~~~~
 regional_analysis<-function(WetID, 
-                            n.years =1000, 
+                            n.years,
                             pet.VAR, 
                             precip.VAR, 
                             wetlands.shp, 
@@ -33,6 +33,7 @@ regional_analysis<-function(WetID,
   root_temp.grd<-mask(rootdepth.grd, catchment_temp.shp)
   
   # 1.3 For now, add catchment aggregate soils data to soils with missing data
+  soils_temp.shp$y_c[is.na(soils_temp.shp$y_c)]<-mean(soils_temp.shp$y_c, na.rm=T)
   soils_temp.shp$y_cl[is.na(soils_temp.shp$y_cl)]<-mean(soils_temp.shp$y_cl, na.rm=T)
   soils_temp.shp$s_fc[is.na(soils_temp.shp$s_fc)]<-mean(soils_temp.shp$s_fc, na.rm=T)
   soils_temp.shp$s_w[is.na(soils_temp.shp$s_w)]<-mean(soils_temp.shp$s_w, na.rm=T)
@@ -226,15 +227,15 @@ regional_analysis<-function(WetID,
     if(is.list(output)==T){
       #Attach list elements to enviornment
       attach(output)
-      
+
       #Isolate SW-GW fluxes to and from wetland
       SW_GW<-GW_local.VAR[,3]
       GWin<-ifelse(SW_GW>0, SW_GW, 0)
       GWout<-ifelse(SW_GW<0, abs(SW_GW), 0)
-      
+
       #Isolate giw.INFO for wetland of interest
       giw.INFO<-matrix(giw.INFO[giw.ID,],nrow=1,  dimnames = list(c(1), colnames(giw.INFO)))
-      
+
       #Calcutlate waterbalance components
       water_balance<-data.frame(precip=sum(precip.VAR)/n.years,
                                 PET=sum(pet.VAR)/n.years,
@@ -243,7 +244,7 @@ regional_analysis<-function(WetID,
                                 SW_out=sum(spill_vol.VAR[runoff_vol.VAR[,3]==0,3])/n.years/giw.INFO[,"area_wetland"],
                                 GW_out=sum(SW_GW[SW_GW<0])/giw.INFO[,"area_wetland"]/n.years,
                                 GW_in=sum(SW_GW[SW_GW>0])/giw.INFO[,"area_wetland"]/n.years)
-      
+
       #Calculate mean water level for each calander day
       hydrograph<-data.frame(day=rep(seq(1,365),n.years), y_w=y_w.VAR[1:(n.years*365),3])
       hydrograph$y_w<- hydrograph$y_w + abs(giw.INFO[,"invert"])
@@ -253,7 +254,7 @@ regional_analysis<-function(WetID,
       hydrograph<- hydrograph %>% group_by(day) %>% summarise(y_w = mean(y_w))
       y_w<-data.frame(t(hydrograph$y_w))
       colnames(y_w)<-hydrograph$day
-      
+
       #Estimate duration and magnitudes
       precip_vol<-sum(precip.VAR[1:(n.years*365)])*giw.INFO[,"area_wetland"]
       shift<-precip.VAR[1:(n.years*365)]+c(0,precip.VAR[1:(n.years*365-1)])
@@ -267,31 +268,32 @@ regional_analysis<-function(WetID,
                              sum(GWin[shift!=0]))/precip_vol,
         QFout_duration  = length(spill_vol.VAR[shift!=0 & spill_vol.VAR[,3]!=0,3])/n.years,
         QFout_magnitude = sum(spill_vol.VAR[shift!=0,3])/precip_vol,
-        
+
         #Surface water fluxes
         SWin_duration   = length(spill_vol.VAR[shift==0 & spill_vol.VAR[,2]>0])/n.years,
         SWin_magnitude  = (sum(spill_vol.VAR[shift==0,2])+sum(runoff_vol.VAR[shift==0,1]))*giw.INFO[,"vol_ratio"]/precip_vol,
         SWout_duration  = length(spill_vol.VAR[shift==0 & spill_vol.VAR[,3]>0])/n.years,
         SWout_magnitude = sum(spill_vol.VAR[shift==0,3])/precip_vol,
-        
+
         #Groundwater Fluxes
         GWin_duration   = length(GWin[GWin>0 & shift==0])/n.years,
         GWin_magnitude  = sum(GWin[GWin>0 & shift==0])/precip_vol,
         GWout_duration  = length(GWout[GWout>0])/n.years,
         GWout_magnitude = sum(GWout[GWout>0])/precip_vol
       )
-      
+
       #detach output variables
       detach(output)
-      
+
       #Combine data
       output<-cbind(giw.INFO, water_balance, duration, y_w)
     }
+    output
   }
   
   # 6.3 Run function
   WHC<-execute(n.years)
-  
+
   # 6.4 Name columns
   colnames(WHC)<-c(
     #GIW Info
@@ -303,10 +305,10 @@ regional_analysis<-function(WetID,
     "QFin_duration","QFin_magnitude","QFout_duration","QFout_magnitude","SWin_duration","SWin_magnitude","SWout_duration","SWout_magnitude","GWin_duration","GWin_magnitude","GWout_duration","GWout_magnitude",
     #Normalized Flow
     seq(1,365))
-  
+
   # 6.5 Add WetID info
   WHC$WetID=main_wetland
-  
+
   # 6.6 Export WHC Results
   WHC
 }

@@ -28,37 +28,57 @@ library(rslurm)     # parallel computing
 ####################################################################################
 # Step 2: Regional simulations------------------------------------------------------
 ####################################################################################
+#2.0 Global Options
+n.years<-10
+n.nodes<-16
+n.cpus<-8
+
 #2.1 Delmarva~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 #2.1.a run script to prep input data
 source("analysis/HUC12_Model_Input_Delmarva.R")
 
+#temporary backup for testing
+save.image("backup_temp.RData")
+#-------------------------
+remove(list=ls())
+load("backup_temp.RData")
+
 #2.1.b run the model
-#grab function
+#define functions from file 
 source("R/regional_analysis.R")
 source("R/WHC_2.R")
-# regional_analysis(WetID=1,n.years =10, pet.VAR,precip.VAR,wetlands.shp,HUC12.shp, 
-#                   catchments.shp, flowlines.shp,fac.grd, soils.shp, dem.grd, 
-#                   nfw_centroid.shp, rootdepth.grd)
 
+#Create wrapper function 
+fun<-function(ID){
+   regional_analysis(WetID=ID,n.years, pet.VAR,precip.VAR,wetlands.shp,HUC12.shp, 
+                     catchments.shp, flowlines.shp,fac.grd, soils.shp, dem.grd, 
+                     nfw_centroid.shp, rootdepth.grd)
+}
 
-
-sopts <- list(partition = "sesynctest", time = "1:00:00" )
-params<-data.frame(WetID=wetlands.shp$WetID[1:16],
-                   n.years=10)
-delmarva<- slurm_apply(regional_analysis, params,
+#run using SLURM
+sopts <- list(partition = "sesync", time = "12:00:00" )
+params<-data.frame(ID=wetlands.shp$WetID[1:16])
+t0<-Sys.time()
+delmarva<- slurm_apply(fun, 
+                       params,
                        add_objects = c(
                          #Functions
-                         "wetland.hydrology",
+                         "wetland.hydrology", "regional_analysis",
                          #Spatial data
                          "fac.grd","catchments.shp","flowlines.shp",
-                         "soils.shp","wetlands.shp","dem.grd", "rootdepth.grd",
+                         "soils.shp","wetlands.shp","dem.grd", "rootdepth.grd", 'n.years',
                          #Climate data
                          "precip.VAR", "pet.VAR"),
-                       nodes = 2, cpus_per_node=8,
+                       nodes = n.nodes, cpus_per_node=n.cpus,
                        pkgs=c('sp','raster','rgdal','rgeos','dplyr'),
                        slurm_options = sopts)
 
-
+# 3.4 Retrieve results
+print_job_status(delmarva)
+results <- get_slurm_out(delmarva, outtype = "table")
+cleanup_files(delmarva)
+tf<-Sys.time()
+tf-t0
 
 #2.2 Run model~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -71,7 +91,7 @@ delmarva<- slurm_apply(regional_analysis, params,
 
 
 #####################################################################################
-# Step 3:PPR Analysis--------------------------------------------------------------
+# Step 3:PPR Analysis----------------------------------------------------------------
 #####################################################################################
 
 

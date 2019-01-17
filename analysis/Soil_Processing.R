@@ -109,14 +109,16 @@ tf-t0
 output<-
   do.call(rbind,x) %>% 
   mutate(mukey = as.numeric(paste(mukey)), 
-                  y_cl  = as.numeric(paste(y_cl)), 
-                  clay  = as.numeric(paste(clay)),
-                  sand  = as.numeric(paste(sand)),
-                  ksat  = as.numeric(paste(ksat)),
-                  s_fc  = as.numeric(paste(s_fc)),
-                  s_w   = as.numeric(paste(s_w)),
-                  n     = as.numeric(paste(n)),
-                  y_c   = as.numeric(paste(y_c)))
+         y_cl  = as.numeric(paste(y_cl)), 
+         clay  = as.numeric(paste(clay)),
+         sand  = as.numeric(paste(sand)),
+         ksat  = as.numeric(paste(ksat)),
+         s_fc  = as.numeric(paste(s_fc)),
+         s_w   = as.numeric(paste(s_w)),
+         n     = as.numeric(paste(n)),
+         y_c   = as.numeric(paste(y_c))) %>%
+  mutate(y_cl = na_if(y_cl, -Inf), 
+         y_cl = na_if(y_cl, Inf))
 
 #Export Ouput
 write.csv(output, "/nfs/WHC-data/WHC_Soils_Input.csv")
