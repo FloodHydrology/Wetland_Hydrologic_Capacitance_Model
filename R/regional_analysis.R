@@ -225,16 +225,34 @@ regional_analysis<-function(WetID,
     
     # b. Organize output
     if(is.list(output)==T){
-      #Wetland Scale Water Balance
-      wetland_balance<-data.frame(precip=sum(precip.VAR)/n.years,
-                                  PET=sum(pet.VAR)/n.years,
+      #Condence GIW.INFO to main wetland
+      giw.INFO<-giw.INFO[giw.INFO[,"giw.ID"]==giw.ID,]
+      
+      #Calculate wetland scale annual water balance
+      wetland_balance<-data.frame(precip=sum(precip.VAR)/(length(precip.VAR)/365),
+                                  PET=sum(pet.VAR)/(length(pet.VAR)/365),
                                   ET=(sum(output$ET_lm.VAR[,3])+sum(output$ET_wt.VAR[,3]))/n.years,
-                                  runoff_in=sum(output$runoff_vol.VAR[,1]/giw.INFO[,"area_wetland"]*giw.INFO[,"vol_ratio"])/n.years,
-                                  SW_out=sum(output$spill_vol.VAR[output$runoff_vol.VAR[,3]==0,3])/n.years/giw.INFO[,"area_wetland"],
-                                  GW_out=sum(output$GW_local.VAR[output$GW_local.VAR<0])/giw.INFO[,"area_wetland"]/n.years,
-                                  GW_in=sum(output$GW_local.VAR[,3][output$GW_local.VAR>0])/giw.INFO[,"area_wetland"]/n.years)
+                                  runoff_in=sum(output$runoff_vol.VAR[,1])/giw.INFO["area_wetland"]*giw.INFO["vol_ratio"]/n.years,
+                                  SW_out=sum(output$spill_vol.VAR[output$runoff_vol.VAR[,3]==0,3])/n.years/giw.INFO["area_wetland"],
+                                  GW_out=sum(output$GW_local.VAR[output$GW_local.VAR<0])/giw.INFO["area_wetland"]/n.years,
+                                  GW_in=sum(output$GW_local.VAR[,3][output$GW_local.VAR>0])/giw.INFO["area_wetland"]/n.years)
+      
+      #Calculate mean water level for each calander day
+      hydrograph<-data.frame(day=rep(seq(1,365),n.years),
+                             y_w=y_w.VAR[1:(n.years*365),3])
+      hydrograph$y_w<- hydrograph$y_w + abs(giw.INFO["invert"])
+      hydrograph$y_w<-ifelse(hydrograph$y_w>0,
+                             hydrograph$y_w/abs(giw.INFO["invert"]),
+                             hydrograph$y_w/abs(giw.INFO["y_cl"]))
+      hydrograph<- hydrograph %>% group_by(day) %>% summarise(y_w = mean(y_w))
       
       
+      #---------------------------------
+      # Start here
+      # Create variables Fred requested
+      # Export as wide df
+      # run function
+      #---------------------------------
       
       
       #Isolate SW-GW fluxes to and from wetland
@@ -242,9 +260,7 @@ regional_analysis<-function(WetID,
       GWin<-ifelse(SW_GW>0, SW_GW, 0)
       GWout<-ifelse(SW_GW<0, abs(SW_GW), 0)
 
-      #Isolate giw.INFO for wetland of interest
-      giw.INFO<-matrix(giw.INFO[giw.ID,],nrow=1,  dimnames = list(c(1), colnames(giw.INFO)))
-
+      
       #Calcutlate waterbalance components
       
 
