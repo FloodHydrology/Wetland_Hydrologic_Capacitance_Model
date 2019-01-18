@@ -29,7 +29,7 @@ library(rslurm)     # parallel computing
 # Step 2: Regional simulations------------------------------------------------------
 ####################################################################################
 #2.0 Global Options
-n.years<-10
+n.years<-1000
 n.nodes<-16
 n.cpus<-8
 
@@ -51,7 +51,7 @@ fun<-function(ID){
 
 #run using SLURM
 sopts <- list(partition = "sesync", time = "12:00:00")
-params<-data.frame(ID=wetlands.shp$WetID[1:16])
+params<-data.frame(ID=wetlands.shp$WetID)
 t0<-Sys.time()
 delmarva<- slurm_apply(fun, 
                        params,
@@ -59,12 +59,12 @@ delmarva<- slurm_apply(fun,
                          #Functions
                          "wetland.hydrology", "regional_analysis",
                          #Spatial data
-                         "fac.grd","catchments.shp","flowlines.shp",
+                         "fac.grd","catchments.shp","flowlines.shp","HUC12.shp",
                          "soils.shp","wetlands.shp","dem.grd", "rootdepth.grd", 'n.years',
                          #Climate data
                          "precip.VAR", "pet.VAR"),
                        nodes = n.nodes, cpus_per_node=n.cpus,
-                       pkgs=c('sp','raster','rgdal','rgeos','dplyr'),
+                       pkgs=c('sp','raster','rgdal','rgeos','tidyverse'),
                        slurm_options = sopts)
 
 # 3.4 Retrieve results
