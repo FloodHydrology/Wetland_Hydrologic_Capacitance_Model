@@ -229,7 +229,7 @@ regional_analysis<-function(WetID,
       giw.INFO<-giw.INFO[giw.INFO[,"giw.ID"]==giw.ID,]
       
       #Calculate wetland scale annual water balance
-      wetland_balance<-data.frame(precip=sum(precip.VAR)/(length(precip.VAR)/365),
+      wetland_balance<-tibble(    precip=sum(precip.VAR)/(length(precip.VAR)/365),
                                   PET=sum(pet.VAR)/(length(pet.VAR)/365),
                                   ET=(sum(output$ET_lm.VAR[,3])+sum(output$ET_wt.VAR[,3]))/n.years,
                                   runoff_in=sum(output$runoff_vol.VAR[,1])/giw.INFO["area_wetland"]*giw.INFO["vol_ratio"]/n.years,
@@ -237,22 +237,30 @@ regional_analysis<-function(WetID,
                                   GW_out=sum(output$GW_local.VAR[output$GW_local.VAR<0])/giw.INFO["area_wetland"]/n.years,
                                   GW_in=sum(output$GW_local.VAR[,3][output$GW_local.VAR>0])/giw.INFO["area_wetland"]/n.years)
       
-      #Calculate mean water level for each calander day
-      hydrograph<-data.frame(day=rep(seq(1,365),n.years),
-                             y_w=y_w.VAR[1:(n.years*365),3])
-      hydrograph$y_w<- hydrograph$y_w + abs(giw.INFO["invert"])
-      hydrograph$y_w<-ifelse(hydrograph$y_w>0,
-                             hydrograph$y_w/abs(giw.INFO["invert"]),
-                             hydrograph$y_w/abs(giw.INFO["y_cl"]))
-      hydrograph<- hydrograph %>% group_by(day) %>% summarise(y_w = mean(y_w))
+      #-------------------------------------
+      #Start here
+      #Add "wetland_duration" tibble
+      #account for duration of different fluxes
+      #-------------------------------------
       
+      #Calculate mean daily fluxes at wetland scale
+      wetland_fluxes<-tibble(
+          day = c(rep(seq(1,365),n.years),1), 
+          y_w = output$y_w.VAR[,3], 
+          gw_local = output$GW_local.VAR[,3]/giw.INFO["area_wetland"], 
+          spill    = output$spill_vol.VAR[,3]/giw.INFO["area_wetland"], 
+          runoff   = output$runoff_vol.VAR[,3]/giw.INFO["area_wetland"]) %>%
+        mutate(y_w = y_w + abs(giw.INFO["invert"]), 
+               y_w = if_else(y_w>0,
+                             y_w/abs(giw.INFO["invert"]),
+                             y_w/abs(giw.INFO["y_cl"]))) %>%
+        group_by(day) %>%
+        summarise_all(., mean)
       
-      #---------------------------------
-      # Start here
-      # Create variables Fred requested
-      # Export as wide df
-      # run function
-      #---------------------------------
+        
+
+      
+      #old output -------------------------------------
       
       
       #Isolate SW-GW fluxes to and from wetland
