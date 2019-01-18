@@ -112,12 +112,14 @@ remove(dLe)
 # Step 4: Climate data--------------------------------------------------------------
 ####################################################################################
 source("R/climate_sim.R")
-climate_sim(ncdc_file_path  = paste0(wd,"inputs/ncdc_alt.csv"), 
+climate<-climate_sim(ncdc_file_path  = paste0(wd,"inputs/ncdc_alt.csv"), 
             pet_var_name    = "pet.VAR",
             precip_var_name = "precip.VAR")
+pet.VAR<-climate$pet.VAR
+precip.VAR<-climate$precip.VAR
+remove(climate)
 
-#Old stuff-----------------------------------------------------------------------------------
-
+#Old stuff--------------------------------------------------------------------------
 
 
 # 1g. Plot for funzies ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

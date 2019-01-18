@@ -8,7 +8,7 @@ climate_sim<-function(ncdc_file_path, pet_var_name, precip_var_name){
   #1 Call Required Libraries~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   library(Evapotranspiration)
   library(markovchain)
-  
+
   #2 Precip Model~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #2.1 Gather Data
   data<-read.csv(ncdc_file_path)
@@ -26,6 +26,7 @@ climate_sim<-function(ncdc_file_path, pet_var_name, precip_var_name){
   
   #2.3 Create Function to populate syn df
   one.state<-function(month){
+    
     #2.3a Create dataframe of days for each month
     n.days<-data.frame(seq(1,12,1),c(31,28,31,30,31,30,31,31,30,31,30,31))
     colnames(n.days)<-c("month","days")
@@ -45,6 +46,7 @@ climate_sim<-function(ncdc_file_path, pet_var_name, precip_var_name){
     #2.3e reorganize a bit
     df<-data.frame(strptime(df$DATE, "%Y-%m-%d"), df$PRCP)
     colnames(df)<-c("DATE","PRCP")
+    df<-df[substring(df$DATE,6,10)!="02-29",] #remove leap year bullshit
     df<-df[month(df$DATE)==month,]
     df$PRCP[is.na(df$PRCP)]<-0
     
@@ -69,21 +71,19 @@ climate_sim<-function(ncdc_file_path, pet_var_name, precip_var_name){
     df<-df[as.numeric(substring(df[,1],6,7))==month, ]
     colnames(df)<-c("date", "precip")
     
-    #2.3j Add data to synthetic flow record
-    syn$precip_mm[month(syn$date)==month]<-df$precip
-    assign('syn', syn, envir = .GlobalEnv)
+    #2.3j Export df
+    df
   }
   
   #2.4 create synthetic flow record
-  sapply(seq(1,12), one.state)
+  precip.VAR<-lapply(seq(1,12), one.state)
+  precip.VAR<-do.call(rbind, precip.VAR)
+  precip.VAR<-precip.VAR[order(precip.VAR$date),]
   
-  #2.5 Define Precip VAR
-  precip.VAR<-syn[,2]
-
   #3 Temperature model ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #3.1 Collect Input Data
   data<-read.csv(ncdc_file_path)
-  
+
   #3.2 Calculate PET
   climatedata<-data.frame(substr(data$DATE,1,4))
   colnames(climatedata)<-"Year"
@@ -91,29 +91,29 @@ climate_sim<-function(ncdc_file_path, pet_var_name, precip_var_name){
   climatedata$Day<-as.numeric(substr(data$DATE,7,8))
   climatedata$Tmax<-(data$TMAX-32)*5/9
   climatedata$Tmin<-(data$TMIN-32)*5/9
-  
+
   #3.3 create timeseries input file (second input file)
   input<-ReadInputs(c("Tmax","Tmin"),
                     climatedata,
-                    stopmissing=c(10,10,3), 
-                    timestep = "daily", 
-                    interp_missing_days = F, 
+                    stopmissing=c(10,10,3),
+                    timestep = "daily",
+                    interp_missing_days = F,
                     interp_missing_entries = F,
                     interp_abnormal = F,
                     missing_method="DoY average",
                     abnormal_method="DoY average")
-  
-  #3.4 create constants input file (third and final file)
+   
+  # #3.4 create constants input file (third and final file)
   data("constants")
   constants$Elev<-10
   constants$lat_rad<-38.8846*pi/180
-  
+
   #3.5 calculate ET
   df<-ET.HargreavesSamani(input, constants, ts="daily")
   pet.VAR<-df$ET.Daily
   pet.VAR[pet.VAR<0]<-0
   pet.VAR[is.na(pet.VAR)==T]<-0
-  
+
   #3.6 Estimate median PET for each julian day
   data$PET<-pet.VAR
   data<-data[,c("DATE","PET")]
@@ -123,17 +123,6 @@ climate_sim<-function(ncdc_file_path, pet_var_name, precip_var_name){
   data<-data.frame(seq(0,365),aggregate(data$PET, list(data$DATE), median))
   pet.VAR<-rep(data[2:366,2],1000)
   
-  #4.0 Export VARs of interest~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  #4.1 Export PET
-  assign(paste(pet_var_name),    
-         pet.VAR, 
-         envir=.GlobalEnv)
-  
-  #4.2 Export precip
-  assign(paste(precip_var_name), 
-         precip.VAR, 
-         envir=.GlobalEnv)
-  
-  #4.3 Clean up env
-  remove(constants, syn, envir = .GlobalEnv)
+  #Output list
+  list(pet.VAR=pet.VAR, precip.VAR=precip.VAR$precip)
 }

@@ -37,12 +37,6 @@ n.cpus<-8
 #2.1.a run script to prep input data
 source("analysis/HUC12_Model_Input_Delmarva.R")
 
-#temporary backup for testing
-save.image("backup_temp.RData")
-#-------------------------
-remove(list=ls())
-load("backup_temp.RData")
-
 #2.1.b run the model
 #define functions from file 
 source("R/regional_analysis.R")
@@ -56,7 +50,7 @@ fun<-function(ID){
 }
 
 #run using SLURM
-sopts <- list(partition = "sesync", time = "12:00:00" )
+sopts <- list(partition = "sesync", time = "12:00:00")
 params<-data.frame(ID=wetlands.shp$WetID[1:16])
 t0<-Sys.time()
 delmarva<- slurm_apply(fun, 
