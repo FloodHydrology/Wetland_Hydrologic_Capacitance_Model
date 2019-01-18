@@ -221,120 +221,110 @@ regional_analysis<-function(WetID,
                                        area,
                                        volume,
                                        giw.ID),
-                     error = function(e) data.frame(matrix(0,ncol=390,nrow=1)))
+                     error = function(e) data.frame(matrix(0,ncol=6,nrow=2942)))
     
     # b. Organize output
     if(is.list(output)==T){
-      #Condence GIW.INFO to main wetland
       giw.INFO<-giw.INFO[giw.INFO[,"giw.ID"]==giw.ID,]
       
+      #i Wetland Scale Estimates
       #Calculate wetland scale annual water balance
-      wetland_balance<-tibble(    precip=sum(precip.VAR)/(length(precip.VAR)/365),
-                                  PET=sum(pet.VAR)/(length(pet.VAR)/365),
-                                  ET=(sum(output$ET_lm.VAR[,3])+sum(output$ET_wt.VAR[,3]))/n.years,
-                                  runoff_in=sum(output$runoff_vol.VAR[,1])/giw.INFO["area_wetland"]*giw.INFO["vol_ratio"]/n.years,
-                                  SW_out=sum(output$spill_vol.VAR[output$runoff_vol.VAR[,3]==0,3])/n.years/giw.INFO["area_wetland"],
-                                  GW_out=sum(output$GW_local.VAR[output$GW_local.VAR<0])/giw.INFO["area_wetland"]/n.years,
-                                  GW_in=sum(output$GW_local.VAR[,3][output$GW_local.VAR>0])/giw.INFO["area_wetland"]/n.years)
+      wetland_balance<-
+        tibble(precip     = sum(precip.VAR)/(length(precip.VAR)/365),
+               pet        = sum(pet.VAR)/(length(pet.VAR)/365),
+               et         = (sum(output$ET_lm.VAR[,3])+sum(output$ET_wt.VAR[,3]))/n.years,
+               qf_in      = sum(output$runoff_vol.VAR[,3])/giw.INFO["area_wetland"]/n.years,
+               qf_out     = sum(output$spill_vol.VAR[output$runoff_vol.VAR[,3]!=0,3])/n.years/giw.INFO["area_wetland"],
+               SW_out     = sum(output$spill_vol.VAR[output$runoff_vol.VAR[,3]==0,3])/n.years/giw.INFO["area_wetland"],
+               GW_out     = sum(output$GW_local.VAR[output$GW_local.VAR<0])/giw.INFO["area_wetland"]/n.years,
+               GW_in      = sum(output$GW_local.VAR[,3][output$GW_local.VAR>0])/giw.INFO["area_wetland"]/n.years) %>%
+        gather(key="var") %>%
+        mutate(day=0)
       
-      #-------------------------------------
-      #Start here
-      #Add "wetland_duration" tibble
-      #account for duration of different fluxes
-      #-------------------------------------
+      #Calculate mean annual duration of fluxes
+      wetland_duration<-
+        tibble(rain_day   = length(precip.VAR[precip.VAR!=0])/(length(precip.VAR)/365),
+               gw_in_day  = length(output$GW_local.VAR[output$GW_local.VAR[,3]>0,3])/n.years,
+               gw_out_day = length(output$GW_local.VAR[output$GW_local.VAR[,3]<0,3])/n.years,
+               qf_in_day  = length(output$runoff_vol.VAR[output$runoff_vol.VAR[,3]>0,3])/n.years,
+               qf_out_day = length(output$spill_vol.VAR[output$runoff_vol.VAR[,3]!=0 & 
+                                                        output$spill_vol.VAR[,3]!=0,3])/n.years,
+               sw_out_day = length(output$spill_vol.VAR[output$runoff_vol.VAR[,3]==0 & 
+                                                        output$spill_vol.VAR[,3]!=0,3])/n.years) %>%
+        gather(key="var") %>%
+        mutate(day=0)
       
       #Calculate mean daily fluxes at wetland scale
-      wetland_fluxes<-tibble(
-          day = c(rep(seq(1,365),n.years),1), 
-          y_w = output$y_w.VAR[,3], 
-          gw_local = output$GW_local.VAR[,3]/giw.INFO["area_wetland"], 
-          spill    = output$spill_vol.VAR[,3]/giw.INFO["area_wetland"], 
-          runoff   = output$runoff_vol.VAR[,3]/giw.INFO["area_wetland"]) %>%
+      wetland_fluxes<-
+        tibble(
+          day       = c(rep(seq(1,365),n.years),1), 
+          y_w       = output$y_w.VAR[,3], 
+          gw_local  = output$GW_local.VAR[,3]/giw.INFO["area_wetland"], 
+          spill_out = output$spill_vol.VAR[,3]/giw.INFO["area_wetland"], 
+          runoff_in = output$runoff_vol.VAR[,3]/giw.INFO["area_wetland"]) %>%
         mutate(y_w = y_w + abs(giw.INFO["invert"]), 
                y_w = if_else(y_w>0,
                              y_w/abs(giw.INFO["invert"]),
                              y_w/abs(giw.INFO["y_cl"]))) %>%
         group_by(day) %>%
-        summarise_all(., mean)
-      
+        summarise_all(., mean) %>%
+        gather(var,value,-day)
         
-
+      #Create wetland output
+      output_wetland<-bind_rows(wetland_balance, wetland_duration, wetland_fluxes) %>%
+        mutate(HUC12 = HUC12.shp$HUC_12,
+               WetID = WetID, 
+               scale = "weltand")
       
-      #old output -------------------------------------
+      #ii. Catchement scale estimates
+      #Calcluate catchment scale annual water balance
+      catchment_balance<-
+        tibble(precip     = sum(precip.VAR)/(length(precip.VAR)/365),
+               pet        = sum(pet.VAR)/(length(pet.VAR)/365),
+               et         = (sum(output$ET_lm.VAR[,1])+sum(output$ET_wt.VAR[,1]))/n.years,
+               sw_out     = sum(output$spill_vol.VAR[,2])/land.INFO[,"area"]/n.years,
+               gw_out     = sum(-1*output$GW_bf.VAR[,1])/n.years) %>%
+        gather(key="var") %>%
+        mutate(day=0)
       
+      #Calculate mean annual duration of catchment fluxes
+      catchment_duration<-
+        tibble(rain_day   = length(precip.VAR[precip.VAR!=0])/(length(precip.VAR)/365),
+               sw_out_day = length(output$spill_vol.VAR[output$spill_vol.VAR[,2]!=0,1])/n.years,
+               gw_out_day = length(output$GW_bf.VAR[output$GW_bf.VAR[,1]<0,1])/n.years) %>%
+        gather(key="var") %>%
+        mutate(day=0)
       
-      #Isolate SW-GW fluxes to and from wetland
-      SW_GW<-GW_local.VAR[,3]
-      GWin<-ifelse(SW_GW>0, SW_GW, 0)
-      GWout<-ifelse(SW_GW<0, abs(SW_GW), 0)
-
+      #Calculate mean daily fluxes at catchment scale
+      catchment_fluxes<-
+        tibble(
+          day       = c(rep(seq(1,365),n.years),1), 
+          y_w       = output$y_w.VAR[,2], 
+          y_wt      = output$y_wt.VAR[,1],
+          gw_out    = output$GW_bf.VAR[,1]/land.INFO["area"], 
+          spill_out = output$spill_vol.VAR[,2]/land.INFO["area"]) %>%
+        mutate(y_wt = y_wt/abs(land.INFO[,"y_cl"]), 
+               y_w =  y_w/abs(land.INFO[,"wetland_invert"])) %>%
+        group_by(day) %>%
+        summarise_all(., mean) %>%
+        gather(var,value,-day)
       
-      #Calcutlate waterbalance components
+      #Create catchment output
+      output_catchment<-bind_rows(catchment_balance, catchment_duration, catchment_fluxes) %>%
+        mutate(HUC12 = HUC12.shp$HUC_12,
+               WetID = WetID, 
+               scale = "catchment")
       
-
-      #Calculate mean water level for each calander day
-      hydrograph<-data.frame(day=rep(seq(1,365),n.years), y_w=y_w.VAR[1:(n.years*365),3])
-      hydrograph$y_w<- hydrograph$y_w + abs(giw.INFO[,"invert"])
-      hydrograph$y_w<-ifelse(hydrograph$y_w>0,
-                             hydrograph$y_w/abs(giw.INFO[,"invert"]),
-                             hydrograph$y_w/abs(giw.INFO[,"y_cl"]))
-      hydrograph<- hydrograph %>% group_by(day) %>% summarise(y_w = mean(y_w))
-      y_w<-data.frame(t(hydrograph$y_w))
-      colnames(y_w)<-hydrograph$day
-
-      #Estimate duration and magnitudes
-      precip_vol<-sum(precip.VAR[1:(n.years*365)])*giw.INFO[,"area_wetland"]
-      shift<-precip.VAR[1:(n.years*365)]+c(0,precip.VAR[1:(n.years*365-1)])
-      precip.VAR<-c(precip.VAR,0)
-      shift<-c(shift,0)
-      duration<-data.frame(
-        #Quick Flow
-        QFin_duration   = length(spill_vol.VAR[shift!=0,2])/n.years/2,
-        QFin_magnitude  = (sum(spill_vol.VAR[shift!=0,2])*giw.INFO[,"vol_ratio"] +
-                             sum(runoff_vol.VAR[shift!=0,1]*giw.INFO[,"vol_ratio"]) +
-                             sum(GWin[shift!=0]))/precip_vol,
-        QFout_duration  = length(spill_vol.VAR[shift!=0 & spill_vol.VAR[,3]!=0,3])/n.years,
-        QFout_magnitude = sum(spill_vol.VAR[shift!=0,3])/precip_vol,
-
-        #Surface water fluxes
-        SWin_duration   = length(spill_vol.VAR[shift==0 & spill_vol.VAR[,2]>0])/n.years,
-        SWin_magnitude  = (sum(spill_vol.VAR[shift==0,2])+sum(runoff_vol.VAR[shift==0,1]))*giw.INFO[,"vol_ratio"]/precip_vol,
-        SWout_duration  = length(spill_vol.VAR[shift==0 & spill_vol.VAR[,3]>0])/n.years,
-        SWout_magnitude = sum(spill_vol.VAR[shift==0,3])/precip_vol,
-
-        #Groundwater Fluxes
-        GWin_duration   = length(GWin[GWin>0 & shift==0])/n.years,
-        GWin_magnitude  = sum(GWin[GWin>0 & shift==0])/precip_vol,
-        GWout_duration  = length(GWout[GWout>0])/n.years,
-        GWout_magnitude = sum(GWout[GWout>0])/precip_vol
-      )
-
-      #detach output variables
-      detach(output)
-
-      #Combine data
-      output<-cbind(giw.INFO, water_balance, duration, y_w)
+      #Combine output in long form
+      output<-bind_rows(output_wetland,output_catchment)
     }
+    
+    #Export output
     output
   }
   
   # 6.3 Run function
   WHC<-execute(n.years)
-
-  # 6.4 Name columns
-  colnames(WHC)<-c(
-    #GIW Info
-    "giw.ID","WetID","area_watershed","area_wetland","invert",
-    "vol_ratio", "dL", "dLe", "dz","n","s_fc","psi","y_cl" ,"y_c","s_wilt","k_sat","RD", "b","Sy", "y_w_0" , "s_t_0",
-    #Water Balance
-    "precip","PET","ET","runoff_in","SW_out","GW_out","GW_in",
-    #duration
-    "QFin_duration","QFin_magnitude","QFout_duration","QFout_magnitude","SWin_duration","SWin_magnitude","SWout_duration","SWout_magnitude","GWin_duration","GWin_magnitude","GWout_duration","GWout_magnitude",
-    #Normalized Flow
-    seq(1,365))
-
-  # 6.5 Add WetID info
-  WHC$WetID=main_wetland
 
   # 6.6 Export WHC Results
   WHC
