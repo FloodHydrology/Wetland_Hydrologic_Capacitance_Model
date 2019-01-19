@@ -112,9 +112,9 @@ remove(dLe)
 # Step 4: Climate data--------------------------------------------------------------
 ####################################################################################
 source("R/climate_sim.R")
-climate<-climate_sim(ncdc_file_path  = paste0(wd,"inputs/ncdc_alt.csv"), 
-            pet_var_name    = "pet.VAR",
-            precip_var_name = "precip.VAR")
+climate<-climate_sim(ncdc_file_path = paste0(wd,"inputs/ncdc_alt.csv"), 
+                     lat_degrees    = 38.8846, 
+                     elevation      = 10)
 pet.VAR<-climate$pet.VAR
 precip.VAR<-climate$precip.VAR
 remove(climate)

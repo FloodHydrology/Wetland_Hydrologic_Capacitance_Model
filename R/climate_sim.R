@@ -4,20 +4,41 @@
 #Date: 10 Jan 2019
 #Purpose: Develop 1000 years of climate data for Delmarva HUC12 Simulations
 ##################################################################################
-climate_sim<-function(ncdc_file_path, pet_var_name, precip_var_name){
+climate_sim<-function(ncdc_file_path, lat_degrees, elevation){
   #1 Call Required Libraries~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   library(Evapotranspiration)
   library(markovchain)
+  library(lubridate)
 
   #2 Precip Model~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #2.1 Gather Data
   data<-read.csv(ncdc_file_path)
-  data$DATE<-strptime(data$DATE, format = "%Y%m%d") #convert data to POSIXlt format
-  data<-data[order(data$DATE),] #order by date
-  data<-data[data$PRCP>=0,] #remove -9999
-  data<-data[!duplicated(data$DATE),] #remove duplicates
-  data$PRCP<-data$PRCP*25.4 #convert to mm
-  data<-data[,c("DATE","PRCP")]
+  data$DATE<-strptime(data$DATE, format = "%Y-%m-%d") #convert data to POSIXlt format
+  data<-data[order(data$DATE),]                       #order by date
+  data<-data[data$PRCP>=0,]                           #remove -9999
+  data<-data[!duplicated(data$DATE),]                 #remove duplicates
+  data$PRCP<-data$PRCP*25.4                           #convert to mm
+  data$temp<-(data$TMAX+data$TMIN)/2                  # calculate average temp
+  data$temp<-(data$temp-32)*4/9                       # convert to celcius
+  data<-data[,c("DATE","PRCP","temp")]                # create new matrix with cleaned data
+  
+  #2.2 Model Snowpack (Assume frozen precip <0*C and melt >3*C)
+  #Roughly estimate snowfall
+  data$SWE<-ifelse(data$temp<0, data$PRCP,0)  # get SWE if below freezing
+  data$PRCP<-ifelse(data$temp<0, 0,data$PRCP) # supress precip if below freezing
+  
+  # 2c. Roughly estimate cumulative snowpack
+  data$snowpack<-0
+  data<-na.omit(data)
+  for(i in 2:length(data[,1])){
+    #Add previous days snow pack
+    data$snowpack[i]<-data$snowpack[i-1]+data$SWE[i]
+    #Melt [1/4 of] snowpack if >3*C
+    if(data$temp[i]>3){
+      data$PRCP[i]<-data$PRCP[i]+(data$snowpack[i]/4)
+      data$snowpack[i]<-data$snowpack[i]*0.75
+    }
+  }
   
   #2.2 Create blank df to populate 1000 year synthetic flow record
   syn<-data.frame(seq.Date(as.Date("1000-01-01"),as.Date("1999-12-31"), "days"), 0)
@@ -83,14 +104,25 @@ climate_sim<-function(ncdc_file_path, pet_var_name, precip_var_name){
   #3 Temperature model ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #3.1 Collect Input Data
   data<-read.csv(ncdc_file_path)
-
+  data<-data[data$TMAX>-1000,]
+  data<-data[data$TMIN>-1000,]
+  TMIN<-aggregate(data$TMIN, list(data$DATE), mean, na.rm=T)
+  TMAX<-aggregate(data$TMAX, list(data$DATE), mean, na.rm=T)
+  data<-merge(TMIN, TMAX, by="Group.1")
+  colnames(data)<-c("DATE","TMIN","TMAX")
+  data$DATE<-strptime(data$DATE, format = "%Y-%m-%d") #convert data to POSIXlt format
+  data$TMAX<-(data$TMAX-32)*4/9 
+  data$TMIN<-(data$TMIN-32)*4/9
+  
   #3.2 Calculate PET
-  climatedata<-data.frame(substr(data$DATE,1,4))
-  colnames(climatedata)<-"Year"
-  climatedata$Month<-as.numeric(substr(data$DATE,5,6))
-  climatedata$Day<-as.numeric(substr(data$DATE,7,8))
-  climatedata$Tmax<-(data$TMAX-32)*5/9
-  climatedata$Tmin<-(data$TMIN-32)*5/9
+  climatedata<-data.frame(Year  = year(data$DATE), 
+                          Month = month(data$DATE), 
+                          Day   = day(data$DATE), 
+                          Tmax  = (data$TMAX-32)*5/9, 
+                          Tmin  = (data$TMIN-32)*5/9)
+  climatedata<-climatedata[climatedata$Tmax>-1000,]
+  climatedata<-climatedata[climatedata$Tmin>-1000,]
+  climatedata<-climatedata[order(climatedata$Year),]
 
   #3.3 create timeseries input file (second input file)
   input<-ReadInputs(c("Tmax","Tmin"),
@@ -105,8 +137,8 @@ climate_sim<-function(ncdc_file_path, pet_var_name, precip_var_name){
    
   # #3.4 create constants input file (third and final file)
   data("constants")
-  constants$Elev<-10
-  constants$lat_rad<-38.8846*pi/180
+  constants$Elev<-elevation
+  constants$lat_rad<-lat_degrees*pi/180
 
   #3.5 calculate ET
   df<-ET.HargreavesSamani(input, constants, ts="daily")
@@ -117,12 +149,12 @@ climate_sim<-function(ncdc_file_path, pet_var_name, precip_var_name){
   #3.6 Estimate median PET for each julian day
   data$PET<-pet.VAR
   data<-data[,c("DATE","PET")]
-  data$DATE<-strptime(data$DATE, format="%Y%m%d")
-  data$DATE<-as.POSIXlt(data$DATE, format="%Y%m%d")
+  data$DATE<-strptime(data$DATE, format="%Y-%m-%d")
+  data$DATE<-as.POSIXlt(data$DATE, format="%Y-%m-%d")
   data$DATE<-data$DATE$yday
   data<-data.frame(seq(0,365),aggregate(data$PET, list(data$DATE), median))
   pet.VAR<-rep(data[2:366,2],1000)
   
-  #Output list
+  #4 Output list~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   list(pet.VAR=pet.VAR, precip.VAR=precip.VAR$precip)
 }

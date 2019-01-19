@@ -42,7 +42,7 @@ source("R/WHC_2.R")
 source("analysis/HUC12_Model_Input_Delmarva.R")
 
 #b Create wrapper function 
-fun<-function(ID){
+dmv_fun<-function(ID){
    regional_analysis(WetID=ID,n.years, pet.VAR,precip.VAR,wetlands.shp,HUC12.shp, 
                      catchments.shp, flowlines.shp,fac.grd, soils.shp, dem.grd, 
                      nfw_centroid.shp, rootdepth.grd)
@@ -51,7 +51,7 @@ fun<-function(ID){
 #c run using SLURM (this will take ~2.5 hrs)
 sopts <- list(partition = "sesync", time = "12:00:00")
 params<-data.frame(ID=wetlands.shp$WetID)
-delmarva<- slurm_apply(fun, 
+delmarva<- slurm_apply(dmv_fun, 
                        params,
                        add_objects = c(
                          #Functions
@@ -65,21 +65,52 @@ delmarva<- slurm_apply(fun,
                        pkgs=c('sp','raster','rgdal','rgeos','tidyverse'),
                        slurm_options = sopts)
 
+#e Retrieve results
+print_job_status(delmarva)
+results <- get_slurm_out(delmarva, outtype = "table")
+cleanup_files(delmarva)
+tf<-Sys.time()
+tf-t0
+
+#f Write output to "data" folder
+write.csv(results,"data/delmarva.csv")
+
 #2.2 PPR~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#a run script to prep input data
+source("analysis/HUC12_Model_Input_PPR.R")
 
+#b Create wrapper function 
+ppr_fun<-function(ID){
+  regional_analysis(WetID=ID,n.years, pet.VAR,precip.VAR,wetlands.shp,HUC12.shp, 
+                    catchments.shp, flowlines.shp,fac.grd, soils.shp, dem.grd, 
+                    nfw_centroid.shp, rootdepth.grd)}
 
+#c run using SLURM (this will take ~2.5 hrs)
+sopts  <- list(partition = "sesync", time = "12:00:00")
+params <- data.frame(ID=wetlands.shp$WetID)
+ppr    <- slurm_apply(dmv_fun, 
+                      params,
+                      add_objects = c(
+                         #Functions
+                         "wetland.hydrology", "regional_analysis",
+                         #Spatial data
+                         "fac.grd","catchments.shp","flowlines.shp","HUC12.shp",
+                         "soils.shp","wetlands.shp","dem.grd", "rootdepth.grd", 'n.years',
+                         #Climate data
+                         "precip.VAR", "pet.VAR"),
+                      nodes = n.nodes, cpus_per_node=n.cpus,
+                      pkgs=c('sp','raster','rgdal','rgeos','tidyverse'),
+                      slurm_options = sopts)
 
+#e Retrieve results
+print_job_status(ppr)
+results <- get_slurm_out(ppr, outtype = "table")
+cleanup_files(ppr)
+tf<-Sys.time()
+tf-t0
 
-
-# #e Retrieve results
-# print_job_status(delmarva)
-# results <- get_slurm_out(delmarva, outtype = "table")
-# cleanup_files(delmarva)
-# tf<-Sys.time()
-# tf-t0
-# 
-# #f Write output to "data" folder
-# write.csv(results,"data/delmarva.csv")
+#f Write output to "data" folder
+write.csv(results,"data/ppr.csv")
 
 
 
