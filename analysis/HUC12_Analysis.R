@@ -28,7 +28,7 @@ library(rslurm)     # parallel computing
 ####################################################################################
 # Step 2: Regional simulations------------------------------------------------------
 ####################################################################################
-#2.1 Define global simulation options
+#2.1 Define global simulation options------------------------------------
 n.years<-1000
 n.nodes<-16
 n.cpus<-8
@@ -37,7 +37,7 @@ n.cpus<-8
 source("R/regional_analysis.R")
 source("R/WHC_2.R")
 
-#2.2 Delmarva~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#2.2 Delmarva----------------------------------------------------------------------
 #a run script to prep input data
 source("analysis/HUC12_Model_Input_Delmarva.R")
 
@@ -75,17 +75,31 @@ tf-t0
 #f Write output to "data" folder
 write.csv(results,"data/delmarva.csv")
 
-#2.2 PPR~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#a run script to prep input data
+#2.3 PPR----------------------------------------------------------------------
+#a remove previous data
+remove(list=ls()[ls()!= 'n.years' &
+                 ls()!= 'n.nodes' &
+                 ls()!= 'n.cpus'  &
+                 ls()!= 'regional_analysis' &
+                 ls()!= 'wetland.hydrology'])
+
+#b run script to prep input data
 source("analysis/HUC12_Model_Input_PPR.R")
 
-#b Create wrapper function 
+#----
+#start here
+#there are isssues with HUC12.shp addition in df
+#----
+
+
+
+#c Create wrapper function 
 ppr_fun<-function(ID){
   regional_analysis(WetID=ID,n.years, pet.VAR,precip.VAR,wetlands.shp,HUC12.shp, 
                     catchments.shp, flowlines.shp,fac.grd, soils.shp, dem.grd, 
                     nfw_centroid.shp, rootdepth.grd)}
 
-#c run using SLURM (this will take ~2.5 hrs)
+#d run using SLURM (this will take ~2.5 hrs)
 sopts  <- list(partition = "sesync", time = "12:00:00")
 params <- data.frame(ID=wetlands.shp$WetID)
 ppr    <- slurm_apply(dmv_fun, 
