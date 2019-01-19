@@ -221,7 +221,12 @@ regional_analysis<-function(WetID,
                                        area,
                                        volume,
                                        giw.ID),
-                     error = function(e) data.frame(matrix(0,ncol=6,nrow=2942)))
+                     error = function(e) tibble(var = "error",
+                                                value = -9999,
+                                                day = 0,
+                                                HUC12=HUC12.shp$HUC_12, 
+                                                WetID = WetID, 
+                                                scale = "wetland"))
     
     # b. Organize output
     if(is.list(output)==T){
