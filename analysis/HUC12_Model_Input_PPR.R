@@ -30,7 +30,7 @@ wd<-"//nfs/WHC-data/Regional_Analysis/PPR/"  # Define working directory for late
 p<-CRS("+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=23 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs +ellps=GRS80 +towgs84=0,0,0")
 
 # 2.2 Wetland shape
-wetlands.shp<-readOGR(paste0(wd,"inputs/."),"NWI")
+wetlands.shp<-readOGR(paste0(wd,"inputs/."),"wetlands")
 wetlands.shp<-spTransform(wetlands.shp, p)
 
 # 2.3 HUC12 shape
@@ -38,15 +38,15 @@ HUC12.shp<-readOGR(paste0(wd,"inputs/."),"HUC12")
 HUC12.shp<-spTransform(HUC12.shp, p)               
 
 # 2.4 Catchment shape  
-catchments.shp<-readOGR(paste0(wd,"inputs/."),"NHD_catchments")
+catchments.shp<-readOGR(paste0(wd,"inputs/."),"catchments")
 catchments.shp<-spTransform(catchments.shp, p)     
 
 #2.5 flowline shape
-flowlines.shp<-readOGR(paste0(wd,"inputs/."),"NHDplus")                              
+flowlines.shp<-readOGR(paste0(wd,"inputs/."),"flow_net")                              
 flowlines.shp<-spTransform(flowlines.shp, p)       
 
 #2.5 flow accumulation
-fac.grd<-raster(paste0(wd,"inputs/fac"))  
+fac.grd<-raster(paste0(wd,"inputs/fac2"))  
 fac.grd<-projectRaster(fac.grd, crs=p)
 
 #2.6 soils
@@ -55,7 +55,7 @@ soils.shp<-spTransform(soils.shp, p)
 soils.shp<-merge(soils.shp, read.csv("data/soils_lookup.csv"), by.x='MUKEY', by.y="mukey")
 
 #2.7 digital elevation model
-dem.grd<-raster(paste0(wd,"inputs/NHDPlus02/Elev_Unit_a/elev_cm"))                   
+dem.grd<-raster(paste0(wd,"inputs/dem_cm"))                   
 mask<-spTransform(catchments.shp, dem.grd@crs)  
 dem.grd<-crop(dem.grd, mask)                    
 remove(mask)                                                              
@@ -103,10 +103,10 @@ dLe<-data.frame(dLe)
 colnames(dLe)<-c("WetID","dLe")
 dLe<-dLe[dLe$WetID!=0,]
 dLe<-dLe[!duplicated(dLe[,1]),]
+
 #Merge with wetlands.shp
 wetlands.shp<-merge(wetlands.shp, dLe, by="WetID")
 remove(dLe)
-
 
 ####################################################################################
 # Step 4: Climate data--------------------------------------------------------------
