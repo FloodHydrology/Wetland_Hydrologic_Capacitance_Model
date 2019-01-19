@@ -28,31 +28,29 @@ library(rslurm)     # parallel computing
 ####################################################################################
 # Step 2: Regional simulations------------------------------------------------------
 ####################################################################################
-#2.0 Global Options
+#2.1 Define global simulation options
 n.years<-1000
 n.nodes<-16
 n.cpus<-8
 
-#2.1 Delmarva~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#2.1.a run script to prep input data
-source("analysis/HUC12_Model_Input_Delmarva.R")
-
-#2.1.b run the model
 #define functions from file 
 source("R/regional_analysis.R")
 source("R/WHC_2.R")
 
-#Create wrapper function 
+#2.2 Delmarva~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+#a run script to prep input data
+source("analysis/HUC12_Model_Input_Delmarva.R")
+
+#b Create wrapper function 
 fun<-function(ID){
    regional_analysis(WetID=ID,n.years, pet.VAR,precip.VAR,wetlands.shp,HUC12.shp, 
                      catchments.shp, flowlines.shp,fac.grd, soils.shp, dem.grd, 
                      nfw_centroid.shp, rootdepth.grd)
 }
 
-#run using SLURM
+#c run using SLURM (this will take ~2.5 hrs)
 sopts <- list(partition = "sesync", time = "12:00:00")
 params<-data.frame(ID=wetlands.shp$WetID)
-t0<-Sys.time()
 delmarva<- slurm_apply(fun, 
                        params,
                        add_objects = c(
@@ -67,20 +65,21 @@ delmarva<- slurm_apply(fun,
                        pkgs=c('sp','raster','rgdal','rgeos','tidyverse'),
                        slurm_options = sopts)
 
-# 3.4 Retrieve results
-print_job_status(delmarva)
-results <- get_slurm_out(delmarva, outtype = "table")
-cleanup_files(delmarva)
-tf<-Sys.time()
-tf-t0
+#2.2 PPR~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-#3.5 Write output to "data" folder
-write.csv(results,"data/delmarva.csv")
 
-####################################################################################
-# Step 3:PPR Analysis----------------------------------------------------------------
-#####################################################################################
 
+
+
+# #e Retrieve results
+# print_job_status(delmarva)
+# results <- get_slurm_out(delmarva, outtype = "table")
+# cleanup_files(delmarva)
+# tf<-Sys.time()
+# tf-t0
+# 
+# #f Write output to "data" folder
+# write.csv(results,"data/delmarva.csv")
 
 
 
