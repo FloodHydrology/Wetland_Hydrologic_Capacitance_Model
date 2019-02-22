@@ -9,6 +9,7 @@ climate_sim<-function(ncdc_file_path, lat_degrees, elevation){
   library(Evapotranspiration)
   library(markovchain)
   library(lubridate)
+  library(MASS)
 
   #2 Precip Model~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   #2.1 Gather Data
@@ -111,8 +112,8 @@ climate_sim<-function(ncdc_file_path, lat_degrees, elevation){
   data<-merge(TMIN, TMAX, by="Group.1")
   colnames(data)<-c("DATE","TMIN","TMAX")
   data$DATE<-strptime(data$DATE, format = "%Y-%m-%d") #convert data to POSIXlt format
-  data$TMAX<-(data$TMAX-32)*4/9 
-  data$TMIN<-(data$TMIN-32)*4/9
+  #data$TMAX<-(data$TMAX-32)*4/9 
+  #data$TMIN<-(data$TMIN-32)*4/9
   
   #3.2 Calculate PET
   climatedata<-data.frame(Year  = year(data$DATE), 
