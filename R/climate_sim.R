@@ -40,7 +40,7 @@ climate_sim<-function(ncdc_file_path, lat_degrees, elevation){
       data$snowpack[i]<-data$snowpack[i]*0.75
     }
   }
-  
+
   #2.2 Create blank df to populate 1000 year synthetic flow record
   syn<-data.frame(seq.Date(as.Date("1000-01-01"),as.Date("1999-12-31"), "days"), 0)
   colnames(syn)<-c("date", "precip_mm")
@@ -73,7 +73,7 @@ climate_sim<-function(ncdc_file_path, lat_degrees, elevation){
     df$PRCP[is.na(df$PRCP)]<-0
     
     #2.3f fit gamma dist
-    gamma<-fitdistr(df$PRCP[df$PRCP>0], "gamma")
+    gamma<-fitdistr(df$PRCP[df$PRCP>0.05], "gamma")
     
     #2.3g prep df for markov model
     df<-split(df$PRCP, year(df$DATE))
