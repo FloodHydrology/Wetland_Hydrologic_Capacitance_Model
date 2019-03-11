@@ -86,13 +86,6 @@ remove(list=ls()[ls()!= 'n.years' &
 #b run script to prep input data
 source("analysis/HUC12_Model_Input_PPR.R")
 
-#----
-#start here
-#there are isssues with HUC12.shp addition in df
-#----
-
-
-
 #c Create wrapper function 
 ppr_fun<-function(ID){
   regional_analysis(WetID=ID,n.years, pet.VAR,precip.VAR,wetlands.shp,HUC12.shp, 
@@ -102,7 +95,7 @@ ppr_fun<-function(ID){
 #d run using SLURM (this will take ~2.5 hrs)
 sopts  <- list(partition = "sesync", time = "12:00:00")
 params <- data.frame(ID=wetlands.shp$WetID)
-ppr    <- slurm_apply(dmv_fun, 
+ppr    <- slurm_apply(ppr_fun, 
                       params,
                       add_objects = c(
                          #Functions
@@ -120,8 +113,6 @@ ppr    <- slurm_apply(dmv_fun,
 print_job_status(ppr)
 results <- get_slurm_out(ppr, outtype = "table")
 cleanup_files(ppr)
-tf<-Sys.time()
-tf-t0
 
 #f Write output to "data" folder
 write.csv(results,"data/ppr.csv")

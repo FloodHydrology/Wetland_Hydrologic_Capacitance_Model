@@ -277,7 +277,7 @@ regional_analysis<-function(WetID,
         
       #Create wetland output
       output_wetland<-bind_rows(wetland_balance, wetland_duration, wetland_fluxes) %>%
-        mutate(HUC12 = HUC12.shp$HUC_12,
+        mutate(HUC12 = HUC12.shp$HUC12,
                WetID = WetID, 
                scale = "weltand")
       
@@ -316,7 +316,7 @@ regional_analysis<-function(WetID,
       
       #Create catchment output
       output_catchment<-bind_rows(catchment_balance, catchment_duration, catchment_fluxes) %>%
-        mutate(HUC12 = HUC12.shp$HUC_12,
+        mutate(HUC12 = HUC12.shp$HUC12,
                WetID = WetID, 
                scale = "catchment")
       
