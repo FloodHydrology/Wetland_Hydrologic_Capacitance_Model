@@ -15,7 +15,8 @@ library(reshape2)
 library(ggplot2)
 library(dplyr)
 
-var.name = 'y_w'
+# var.name = 'y_w'
+var.name = 'runoff_in'
 
 ## For Delmarva --------------------------------------------------------------------
 # 1. Load data ---------------------------------------------------------------------
@@ -53,8 +54,8 @@ ggplot() +
 
 ## For PPR----- --------------------------------------------------------------------
 # 1. Load data ---------------------------------------------------------------------
-
-rawdata <- read.table('/nfs/WHC-data/Figure Generation/ppr_output.csv', sep=",", header=TRUE)
+rawdata <- read.table('/nfs/WHC-data/Figure Generation/ppr_2.csv', sep=",", header=TRUE)
+# rawdata <- read.table('/nfs/WHC-data/Figure Generation/ppr_output.csv', sep=",", header=TRUE)
 rawdata$value <- as.numeric(as.character(rawdata$value))
 
 levels <- subset(rawdata, scale == 'weltand' & var == var.name)   # need to fix typo!
@@ -63,9 +64,9 @@ levels <- subset(rawdata, scale == 'weltand' & var == var.name)   # need to fix 
 
 stat <- levels %>%
   group_by(day) %>%
-  summarise(x25th = quantile(value, probs = 0.01, na.rm = T), 
+  summarise(x25th = quantile(value, probs = 0.25, na.rm = T), 
             median = quantile(value, probs = 0.5, na.rm = T),
-            x75th = quantile(value, probs = 0.99, na.rm = T))
+            x75th = quantile(value, probs = 0.75, na.rm = T))
 
 stat2 <- melt(stat, by_id = 'day')
 stat2$day <- as.numeric(as.character(stat$day))
@@ -73,16 +74,17 @@ stat$day <- as.numeric(as.character(stat$day))
 
 # 2. Plot Data ---------------------------------------------------------------------
 ggplot() + 
-  geom_line(data = stat2, aes(x = day, y = value, group = variable),
+  geom_line(data = stat2, aes(x = day, y = value, group = variable, 
+                              linetype=ifelse(variable=='median', 'longdash', 'solid')),
             size = 1) +
   geom_ribbon(data = stat, aes(x = day, ymin = x25th, ymax = x75th),
               fill = 'blue', alpha = 0.1) +
   theme_bw() +
   theme(plot.title = element_text(size = 16, face = 'bold'),
         axis.text = element_text(size = 12, face = 'bold'),
-        axis.title = element_text(size = 14, face = 'bold')) +
-  labs(x = 'Day of Year', y = 'Normalized Water Level', title = 'Figure 4b - PPR') 
-
+        axis.title = element_text(size = 14, face = 'bold'),
+        legend.position = "none") +
+  labs(x = 'Day of Year', y = 'Runoff_in', title = 'Figure 4b - PPR') 
 
 
 
@@ -134,8 +136,8 @@ rm(list=ls(all=TRUE))
 
 ## For PPR ---- --------------------------------------------------------------------
 # 1. Load data ---------------------------------------------------------------------
-
-rawdata <- read.table('/nfs/WHC-data/Figure Generation/ppr_output.csv', sep=",", header=TRUE)
+rawdata <- read.table('~/Wetland_Hydrologic_Capacitance_Model/data/ppr_2.csv', sep=",", header=TRUE)
+# rawdata <- read.table('/nfs/WHC-data/Figure Generation/ppr_output.csv', sep=",", header=TRUE)
 rawdata$value <- as.numeric(as.character(rawdata$value))
 
 levels <- subset(rawdata, scale == 'catchment' & var == 'y_wt')   
@@ -144,9 +146,9 @@ levels <- subset(rawdata, scale == 'catchment' & var == 'y_wt')
 
 stat <- levels %>%
   group_by(day) %>%
-  summarise(x25th = quantile(value, probs = 0.05, na.rm = T), 
+  summarise(x25th = quantile(value, probs = 0.25, na.rm = T), 
             median = quantile(value, probs = 0.5, na.rm = T),
-            x75th = quantile(value, probs = 0.95, na.rm = T))
+            x75th = quantile(value, probs = 0.75, na.rm = T))
 
 stat2 <- melt(stat, by_id = 'day')
 stat2$day <- as.numeric(as.character(stat$day))
@@ -154,18 +156,17 @@ stat$day <- as.numeric(as.character(stat$day))
 
 # 2. Plot Data ---------------------------------------------------------------------
 ggplot() + 
-  geom_line(data = stat2, aes(x = day, y = value, group = variable),
+  geom_line(data = stat2, aes(x = day, y = value, group = variable, 
+                              linetype=ifelse(variable=='median', 'longdash', 'solid')),
             size = 1) +
   geom_ribbon(data = stat, aes(x = day, ymin = x25th, ymax = x75th),
               fill = 'blue', alpha = 0.1) +
   theme_bw() +
   theme(plot.title = element_text(size = 16, face = 'bold'),
         axis.text = element_text(size = 12, face = 'bold'),
-        axis.title = element_text(size = 14, face = 'bold')) +
+        axis.title = element_text(size = 14, face = 'bold'),
+        legend.position = "none") +
   labs(x = 'Day of Year', y = 'Normalized Wetland Stage', title = 'Figure 4b - PPR Catchment Scale') 
-
-
-
 
 
 
