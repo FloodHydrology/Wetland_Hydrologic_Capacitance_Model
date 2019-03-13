@@ -17,18 +17,21 @@ library(raster)     # for spatial analysis
 library(rgdal)      # for spatial analysis
 library(rgeos)      # for spatial analysis
 library(geosphere)  # for spatial analysis
-library(tidyverse)  # for data wrangling
 library(MASS)       #distribrutional analysis
 library(markovchain)# for MCMC modeling
 library(Evapotranspiration)
 library(lubridate)  # dealing with dates
 library(parallel)   # parallel computing
 library(rslurm)     # parallel computing
+library(tidyverse)  # for data wrangling
+
+# 1c. Define data directory ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+results_dir<-"/nfs/WHC-data/Figure Generation/"
 
 ####################################################################################
 # Step 2: Regional simulations------------------------------------------------------
 ####################################################################################
-#2.1 Define global simulation options------------------------------------
+#2.1 Define global simulation options-----------------------------------------------
 n.years<-10
 n.nodes<-16
 n.cpus<-8
@@ -73,7 +76,7 @@ tf<-Sys.time()
 tf-t0
 
 #f Write output to "data" folder
-write.csv(results,"data/delmarva.csv")
+write.csv(results,paste0(results_dir,"delmarva.csv"))
 
 #2.3 PPR----------------------------------------------------------------------
 #a remove previous data
@@ -115,9 +118,9 @@ results <- get_slurm_out(ppr, outtype = "table")
 cleanup_files(ppr)
 
 #f Write output to "data" folder
-write.csv(results,"data/ppr.csv")
+write.csv(results,paste0(results_dir,"ppr.csv"))
 
-#2.3 PPR----------------------------------------------------------------------
+#2.4 Florida----------------------------------------------------------------------
 #a remove previous data
 remove(list=ls()[ls()!= 'n.years' &
                    ls()!= 'n.nodes' &
@@ -157,4 +160,4 @@ results <- get_slurm_out(florida, outtype = "table")
 cleanup_files(florida)
 
 #f Write output to "data" folder
-write.csv(results,"data/florida.csv")
+write.csv(results,paste0(results_dir,"florida.csv"))
