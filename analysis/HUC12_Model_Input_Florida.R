@@ -12,13 +12,13 @@
 #rm(list=ls(all=TRUE))
 
 # 1b. Load Packages ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-library(sp)         # for spatial analysis
-library(raster)     # for spatial analysis
-library(rgdal)      # for spatial analysis
-library(rgeos)      # for spatial analysis
-library(dplyr)      # for data processing
-library(rslurm)     # parallel computing
-library(geosphere)  # for spatial analysis
+# library(sp)         # for spatial analysis
+# library(raster)     # for spatial analysis
+# library(rgdal)      # for spatial analysis
+# library(rgeos)      # for spatial analysis
+# library(dplyr)      # for data processing
+# library(rslurm)     # parallel computing
+# library(geosphere)  # for spatial analysis
 
 # 1c. Define data dir ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 wd<-"//nfs/WHC-data/Regional_Analysis/North_Florida/"  # Define working directory for later reference
@@ -35,7 +35,8 @@ wetlands.shp<-spTransform(wetlands.shp, p)
 
 # 2.3 HUC12 shape
 HUC12.shp<-readOGR(paste0(wd,"inputs/."),"HUC12")   
-HUC12.shp<-spTransform(HUC12.shp, p)               
+HUC12.shp<-spTransform(HUC12.shp, p)   
+HUC12.shp$HUC12<-HUC12.shp$HUC_12
 
 # 2.4 Catchment shape  
 catchments.shp<-readOGR(paste0(wd,"inputs/."),"NHD_Catchments")

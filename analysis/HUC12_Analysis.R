@@ -32,7 +32,7 @@ results_dir<-"/nfs/WHC-data/Figure Generation/"
 # Step 2: Regional simulations------------------------------------------------------
 ####################################################################################
 #2.1 Define global simulation options-----------------------------------------------
-n.years<-10
+n.years<-1000
 n.nodes<-16
 n.cpus<-8
 

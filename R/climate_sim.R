@@ -41,59 +41,59 @@ climate_sim<-function(ncdc_file_path, lat_degrees, elevation){
     }
   }
 
-  #2.2 Create blank df to populate 1000 year synthetic flow record
+  #2.3 Create blank df to populate 1000 year synthetic flow record
   syn<-data.frame(seq.Date(as.Date("1000-01-01"),as.Date("1999-12-31"), "days"), 0)
   colnames(syn)<-c("date", "precip_mm")
   syn<-syn[substring(syn$date,6,10)!="02-29",] #remove leap year bullshit
   
-  #2.3 Create Function to populate syn df
+  #2.4 Create Function to populate syn df
   one.state<-function(month){
     
-    #2.3a Create dataframe of days for each month
+    #2.4a Create dataframe of days for each month
     n.days<-data.frame(seq(1,12,1),c(31,28,31,30,31,30,31,31,30,31,30,31))
     colnames(n.days)<-c("month","days")
     
-    #2.3b Set random seed
+    #2.4b Set random seed
     set.seed(1)
     
-    #2.3c create data.frame with sequence of dates from 1900 to 2014
+    #2.4c create data.frame with sequence of dates from 1900 to 2014
     df<-data.frame(seq.Date(as.Date("1948/1/1"),as.Date("2010/06/30"), "days"),0)
     colnames(df)<-c("DATE","temp")
     
-    #2.3d retreive data
+    #2.4d retreive data
     df$DATE<-paste(df$DATE)
     data$DATE<-paste(data$DATE)
     df<-merge(df, data, by="DATE", all=T)
     
-    #2.3e reorganize a bit
+    #2.4e reorganize a bit
     df<-data.frame(strptime(df$DATE, "%Y-%m-%d"), df$PRCP)
     colnames(df)<-c("DATE","PRCP")
     df<-df[substring(df$DATE,6,10)!="02-29",] #remove leap year bullshit
     df<-df[month(df$DATE)==month,]
     df$PRCP[is.na(df$PRCP)]<-0
     
-    #2.3f fit gamma dist
+    #2.4f fit gamma dist
     gamma<-fitdistr(df$PRCP[df$PRCP>0.05], "gamma")
     
-    #2.3g prep df for markov model
+    #2.4g prep df for markov model
     df<-split(df$PRCP, year(df$DATE))
     df<-matrix(unlist(df), nrow=n.days$days[n.days$month==month])
     
-    #2.3h fit markov model
+    #2.4h fit markov model
     df<-ifelse(df==0, "dry", "wet")
     markov<-markovchainFit(data=df, method="mle", name="name")
     df<-rmarkovchain(n=365000, object=markov$estimate, t0="dry")
     df[df=="dry"]<-0
     df[df=="wet"]<-rgamma(length( df[df=="wet"]), gamma$estimate[1],gamma$estimate[2])
     
-    #2.3i Create markov time series
+    #2.4i Create markov time series
     period<-seq.Date(as.Date("1000/1/1"),as.Date("1999/12/31"), "days")
     period<-period[substring(period,6,10)!="02-29"]
     df<-data.frame(period,as.numeric(df))
     df<-df[as.numeric(substring(df[,1],6,7))==month, ]
     colnames(df)<-c("date", "precip")
     
-    #2.3j Export df
+    #2.4j Export df
     df
   }
   
