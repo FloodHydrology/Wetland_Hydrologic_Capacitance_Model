@@ -26,23 +26,46 @@ library(rslurm)     # parallel computing
 library(tidyverse)  # for data wrangling
 
 # 1c. Define data directory ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+backup_dir<-"/nfs/WHC-data/Regional_Analysis/backup/"
 results_dir<-"/nfs/WHC-data/Figure Generation/"
+
+####################################################################################
+# Step 2:Input data for regional analysis-------------------------------------------
+####################################################################################
+#2.1 Load regional analysis function
+source("R/regional_analysis.R")
+
+#2.2 Delmarva
+source("analysis/HUC12_Model_Input_Delmarva.R")
+save.image(paste0(backup_dir,"Delmarva_Input.RData"))
+remove(list=ls()[ls()!= 'backup_dir' & ls()!= 'results_dir' & ls()!= 'regional_analysis'])
+
+#2.3 ppr
+source("analysis/HUC12_Model_Input_PPR.R")
+save.image(paste0(backup_dir,"PPR_Input.RData"))
+remove(list=ls()[ls()!= 'backup_dir' & ls()!= 'results_dir' & ls()!= 'regional_analysis'])
+
+#2.4 Florida
+source("analysis/HUC12_Model_Input_Florida.R")
+save.image(paste0(backup_dir,"Florida_Input.RData"))
+remove(list=ls()[ls()!= 'backup_dir' & ls()!= 'results_dir' & ls()!= 'regional_analysis'])
 
 ####################################################################################
 # Step 2: Regional simulations------------------------------------------------------
 ####################################################################################
 #2.1 Define global simulation options-----------------------------------------------
-n.years<-1000
-n.nodes<-16
+cluster_name<-"sesync"
+time_limit<-"12:00:00"
+n.years<-10
+n.nodes<-3
 n.cpus<-8
 
 #define functions from file 
-source("R/regional_analysis.R")
 source("R/WHC_2.R")
 
 #2.2 Delmarva----------------------------------------------------------------------
-#a run script to prep input data
-source("analysis/HUC12_Model_Input_Delmarva.R")
+#a load input data
+load(paste0(backup_dir,"Delmarva_Input.RData"))
 
 #b Create wrapper function 
 dmv_fun<-function(ID){
@@ -52,7 +75,7 @@ dmv_fun<-function(ID){
 }
 
 #c run using SLURM (this will take ~2.5 hrs)
-sopts <- list(partition = "sesync", time = "12:00:00")
+sopts <- list(partition = cluster_name, time = time_limit)
 params<-data.frame(ID=wetlands.shp$WetID)
 delmarva<- slurm_apply(dmv_fun, 
                        params,
@@ -68,26 +91,22 @@ delmarva<- slurm_apply(dmv_fun,
                        pkgs=c('sp','raster','rgdal','rgeos','tidyverse'),
                        slurm_options = sopts)
 
-#e Retrieve results
-print_job_status(delmarva)
-results <- get_slurm_out(delmarva, outtype = "table")
-cleanup_files(delmarva)
-tf<-Sys.time()
-tf-t0
-
-#f Write output to "data" folder
-write.csv(results,paste0(results_dir,"delmarva.csv"))
-
 #2.3 PPR----------------------------------------------------------------------
 #a remove previous data
-remove(list=ls()[ls()!= 'n.years' &
+remove(list=ls()[ls()!=   'ppr' &
+                 ls()!= 'delmarva'&
+                 ls()!= 'cluster_name' &
+                 ls()!= 'time_limit' &   
+                 ls()!= 'n.years' &
                  ls()!= 'n.nodes' &
                  ls()!= 'n.cpus'  &
                  ls()!= 'regional_analysis' &
-                 ls()!= 'wetland.hydrology'])
+                 ls()!= 'wetland.hydrology' & 
+                 ls()!= 'backup_dir' &
+                 ls()!= 'results_dir'])
 
-#b run script to prep input data
-source("analysis/HUC12_Model_Input_PPR.R")
+#b load ppr input data
+load(paste0(backup_dir,"PPR_Input.RData"))
 
 #c Create wrapper function 
 ppr_fun<-function(ID){
@@ -96,7 +115,7 @@ ppr_fun<-function(ID){
                     nfw_centroid.shp, rootdepth.grd)}
 
 #d run using SLURM (this will take ~2.5 hrs)
-sopts  <- list(partition = "sesync", time = "12:00:00")
+sopts  <- list(partition = cluster_name, time = time_limit)
 params <- data.frame(ID=wetlands.shp$WetID)
 ppr    <- slurm_apply(ppr_fun, 
                       params,
@@ -112,24 +131,23 @@ ppr    <- slurm_apply(ppr_fun,
                       pkgs=c('sp','raster','rgdal','rgeos','tidyverse'),
                       slurm_options = sopts)
 
-#e Retrieve results
-print_job_status(ppr)
-results <- get_slurm_out(ppr, outtype = "table")
-cleanup_files(ppr)
-
-#f Write output to "data" folder
-write.csv(results,paste0(results_dir,"ppr.csv"))
-
 #2.4 Florida----------------------------------------------------------------------
 #a remove previous data
-remove(list=ls()[ls()!= 'n.years' &
+remove(list=ls()[  ls()!= 'ppr' &
+                   ls()!= 'delmarva'&
+                   ls()!= 'cluster_name' &
+                   ls()!= 'time_limit' &   
+                   ls()!= 'n.years' &
                    ls()!= 'n.nodes' &
                    ls()!= 'n.cpus'  &
                    ls()!= 'regional_analysis' &
-                   ls()!= 'wetland.hydrology'])
+                   ls()!= 'wetland.hydrology' & 
+                   ls()!= 'backup_dir' &
+                   ls()!= 'results_dir'])
 
-#b run script to prep input data
-source("analysis/HUC12_Model_Input_Florida.R")
+
+#b load input data
+load(paste0(backup_dir,"Florida_Input.RData"))
 
 #c Create wrapper function 
 florida_fun<-function(ID){
@@ -138,7 +156,7 @@ florida_fun<-function(ID){
                     nfw_centroid.shp, rootdepth.grd)}
 
 #d run using SLURM (this will take ~2.5 hrs)
-sopts   <- list(partition = "sesync", time = "12:00:00")
+sopts   <- list(partition = cluster_name, time = time_limit)
 params  <- data.frame(ID=wetlands.shp$WetID)
 florida <- slurm_apply(florida_fun, 
                        params,
@@ -154,10 +172,29 @@ florida <- slurm_apply(florida_fun,
                        pkgs=c('sp','raster','rgdal','rgeos','tidyverse'),
                        slurm_options = sopts)
 
-#e Retrieve results
+#2.5 Gather Data-------------------------------------------------------------------
+#a check job status
+print_job_status(delmarva)
+print_job_status(ppr)
 print_job_status(florida)
-results <- get_slurm_out(florida, outtype = "table")
+
+#a gather results
+results_delmarva <- get_slurm_out(delmarva, outtype = "table")
+results_ppr      <- get_slurm_out(ppr,      outtype = "table")
+results_florida  <- get_slurm_out(florida,  outtype = "table")
+
+#b write to output folder
+write.csv(results_delmarva,  paste0(results_dir,"delmarva.csv"))
+write.csv(results_ppr,       paste0(results_dir,"ppr.csv"))
+write.csv(results_florida,   paste0(results_dir,"florida.csv"))
+
+#clean up file
+cleanup_files(delmarva)
+cleanup_files(ppr)
 cleanup_files(florida)
 
-#f Write output to "data" folder
-write.csv(results,paste0(results_dir,"florida.csv"))
+
+
+
+
+
