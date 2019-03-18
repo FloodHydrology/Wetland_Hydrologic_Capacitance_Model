@@ -51,9 +51,9 @@ save.image(paste0(backup_dir,"Florida_Input.RData"))
 remove(list=ls()[ls()!= 'backup_dir' & ls()!= 'results_dir' & ls()!= 'regional_analysis'])
 
 ####################################################################################
-# Step 2: Regional simulations------------------------------------------------------
+# Step 3: Regional simulations------------------------------------------------------
 ####################################################################################
-#2.1 Define global simulation options-----------------------------------------------
+#3.1 Define global simulation options-----------------------------------------------
 cluster_name<-"sesync"
 time_limit<-"12:00:00"
 n.years<-10
@@ -63,7 +63,7 @@ n.cpus<-8
 #define functions from file 
 source("R/WHC_2.R")
 
-#2.2 Delmarva----------------------------------------------------------------------
+#3.2 Delmarva----------------------------------------------------------------------
 #a load input data
 load(paste0(backup_dir,"Delmarva_Input.RData"))
 
@@ -91,7 +91,7 @@ delmarva<- slurm_apply(dmv_fun,
                        pkgs=c('sp','raster','rgdal','rgeos','tidyverse'),
                        slurm_options = sopts)
 
-#2.3 PPR----------------------------------------------------------------------
+#3.3 PPR----------------------------------------------------------------------
 #a remove previous data
 remove(list=ls()[ls()!=   'ppr' &
                  ls()!= 'delmarva'&
@@ -131,7 +131,7 @@ ppr    <- slurm_apply(ppr_fun,
                       pkgs=c('sp','raster','rgdal','rgeos','tidyverse'),
                       slurm_options = sopts)
 
-#2.4 Florida----------------------------------------------------------------------
+#3.4 Florida----------------------------------------------------------------------
 #a remove previous data
 remove(list=ls()[  ls()!= 'ppr' &
                    ls()!= 'delmarva'&
@@ -172,7 +172,7 @@ florida <- slurm_apply(florida_fun,
                        pkgs=c('sp','raster','rgdal','rgeos','tidyverse'),
                        slurm_options = sopts)
 
-#2.5 Gather Data-------------------------------------------------------------------
+#3.5 Gather Data-------------------------------------------------------------------
 #a check job status
 print_job_status(delmarva)
 print_job_status(ppr)
