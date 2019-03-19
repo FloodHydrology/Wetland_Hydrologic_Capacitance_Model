@@ -59,8 +59,8 @@ remove(list=ls()[ls()!= 'backup_dir' & ls()!= 'results_dir' & ls()!= 'regional_a
 #3.1 Define global simulation options-----------------------------------------------
 cluster_name<-"sesync"
 time_limit<-"12:00:00"
-n.years<-100
-n.nodes<-10
+n.years<-1000
+n.nodes<-12
 n.cpus<-8
 
 #define functions from file 
@@ -151,7 +151,6 @@ remove(list=ls()[  ls()!= 'ppr' &
                    ls()!= 'backup_dir' &
                    ls()!= 'results_dir'])
 
-
 #b load input data
 load(paste0(backup_dir,"Florida_Input.RData"))
 
@@ -198,6 +197,10 @@ write.csv(results_ppr,       paste0(results_dir,"ppr.csv"))
 write.csv(results_florida,   paste0(results_dir,"florida.csv"))
 
 #clean up file
-cleanup_files(delmarva)
-cleanup_files(ppr)
-cleanup_files(florida)
+# cleanup_files(delmarva)
+# cleanup_files(ppr)
+# cleanup_files(florida)
+
+#Save output
+save.image(paste0(backup_dir,"output.RData"))
+
