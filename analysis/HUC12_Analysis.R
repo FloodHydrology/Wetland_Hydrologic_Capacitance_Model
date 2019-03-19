@@ -60,7 +60,7 @@ remove(list=ls()[ls()!= 'backup_dir' & ls()!= 'results_dir' & ls()!= 'regional_a
 cluster_name<-"sesync"
 time_limit<-"12:00:00"
 n.years<-100
-n.nodes<-6
+n.nodes<-10
 n.cpus<-8
 
 #define functions from file 
@@ -73,7 +73,8 @@ load(paste0(backup_dir,"Delmarva_Input.RData"))
 
 #b Create wrapper function 
 dmv_fun<-function(ID){
-   regional_analysis(WetID=ID,n.years, pet.VAR,precip.VAR,wetlands.shp,HUC12.shp, 
+  print(paste0("WetID=",ID)) 
+  regional_analysis(WetID=ID,n.years, pet.VAR,precip.VAR,wetlands.shp,HUC12.shp, 
                      catchments.shp, flowlines.shp,fac.grd, soils.shp, dem.grd, 
                      nfw_centroid.shp, rootdepth.grd)
 }
@@ -114,6 +115,7 @@ load(paste0(backup_dir,"PPR_Input.RData"))
 
 #c Create wrapper function 
 ppr_fun<-function(ID){
+  print(paste0("WetID=",ID))
   regional_analysis(WetID=ID,n.years, pet.VAR,precip.VAR,wetlands.shp,HUC12.shp, 
                     catchments.shp, flowlines.shp,fac.grd, soils.shp, dem.grd, 
                     nfw_centroid.shp, rootdepth.grd)}
@@ -155,6 +157,7 @@ load(paste0(backup_dir,"Florida_Input.RData"))
 
 #c Create wrapper function 
 florida_fun<-function(ID){
+  print(paste0("WetID=",ID))
   regional_analysis(WetID=ID,n.years, pet.VAR,precip.VAR,wetlands.shp,HUC12.shp, 
                     catchments.shp, flowlines.shp,fac.grd, soils.shp, dem.grd, 
                     nfw_centroid.shp, rootdepth.grd)}
