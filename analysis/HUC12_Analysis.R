@@ -56,8 +56,8 @@ remove(list=ls()[ls()!= 'backup_dir' & ls()!= 'results_dir' & ls()!= 'regional_a
 #3.1 Define global simulation options-----------------------------------------------
 cluster_name<-"sesync"
 time_limit<-"12:00:00"
-n.years<-10
-n.nodes<-3
+n.years<-100
+n.nodes<-6
 n.cpus<-8
 
 #define functions from file 
@@ -74,7 +74,7 @@ dmv_fun<-function(ID){
                      nfw_centroid.shp, rootdepth.grd)
 }
 
-#c run using SLURM (this will take ~2.5 hrs)
+#c run using SLURM 
 sopts <- list(partition = cluster_name, time = time_limit)
 params<-data.frame(ID=wetlands.shp$WetID)
 delmarva<- slurm_apply(dmv_fun, 
@@ -172,7 +172,9 @@ florida <- slurm_apply(florida_fun,
                        pkgs=c('sp','raster','rgdal','rgeos','tidyverse'),
                        slurm_options = sopts)
 
-#3.5 Gather Data-------------------------------------------------------------------
+####################################################################################
+# Step 4: Gather output and save!---------------------------------------------------
+####################################################################################
 #a check job status
 print_job_status(delmarva)
 print_job_status(ppr)
@@ -192,9 +194,3 @@ write.csv(results_florida,   paste0(results_dir,"florida.csv"))
 cleanup_files(delmarva)
 cleanup_files(ppr)
 cleanup_files(florida)
-
-
-
-
-
-
