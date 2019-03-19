@@ -306,8 +306,8 @@ execute<-function(n.years){
         day       = c(rep(seq(1,365),n.years),1), 
         y_w       = output$y_w.VAR[,2], 
         y_wt      = output$y_wt.VAR[,1],
-        gw_out    = output$GW_bf.VAR[,1]/land.INFO["area"], 
-        spill_out = output$spill_vol.VAR[,2]/land.INFO["area"]) %>%
+        bf_out    = output$GW_bf.VAR[,1]/land.INFO[,"area"], 
+        spill_out = output$spill_vol.VAR[,2]/land.INFO[,"area"]) %>%
       dplyr::mutate(y_wt = y_wt/abs(land.INFO[,"y_cl"]), 
              y_w =  y_w/abs(land.INFO[,"wetland_invert"])) %>%
       dplyr::group_by(day) %>%
