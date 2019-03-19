@@ -221,7 +221,7 @@ execute<-function(n.years){
                                      area,
                                      volume,
                                      giw.ID),
-                   error = function(e) tibble(var = "error",
+                   error = function(e) tibble::tibble(var = "error",
                                               value = -9999,
                                               day = 0,
                                               HUC12=HUC12.shp$HUC_12, 
@@ -235,7 +235,7 @@ execute<-function(n.years){
     #i Wetland Scale Estimates
     #Calculate wetland scale annual water balance
     wetland_balance<-
-      tibble(precip     = sum(precip.VAR)/(length(precip.VAR)/365),
+      tibble::tibble(precip     = sum(precip.VAR)/(length(precip.VAR)/365),
              pet        = sum(pet.VAR)/(length(pet.VAR)/365),
              et         = (sum(output$ET_lm.VAR[,3])+sum(output$ET_wt.VAR[,3]))/n.years,
              qf_in      = sum(output$runoff_vol.VAR[,3])/giw.INFO["area_wetland"]/n.years,
@@ -248,7 +248,7 @@ execute<-function(n.years){
     
     #Calculate mean annual duration of fluxes
     wetland_duration<-
-      tibble(rain_day   = length(precip.VAR[precip.VAR!=0])/(length(precip.VAR)/365),
+      tibble::tibble(rain_day   = length(precip.VAR[precip.VAR!=0])/(length(precip.VAR)/365),
              gw_in_day  = length(output$GW_local.VAR[output$GW_local.VAR[,3]>0,3])/n.years,
              gw_out_day = length(output$GW_local.VAR[output$GW_local.VAR[,3]<0,3])/n.years,
              qf_in_day  = length(output$runoff_vol.VAR[output$runoff_vol.VAR[,3]>0,3])/n.years,
@@ -261,7 +261,7 @@ execute<-function(n.years){
     
     #Calculate mean daily fluxes at wetland scale
     wetland_fluxes<-
-      tibble(
+      tibble::tibble(
         day       = c(rep(seq(1,365),n.years),1), 
         y_w       = output$y_w.VAR[,3], 
         gw_local  = output$GW_local.VAR[,3]/giw.INFO["area_wetland"], 
@@ -284,7 +284,7 @@ execute<-function(n.years){
     #ii. Catchement scale estimates
     #Calcluate catchment scale annual water balance
     catchment_balance<-
-      tibble(precip     = sum(precip.VAR)/(length(precip.VAR)/365),
+      tibble::tibble(precip     = sum(precip.VAR)/(length(precip.VAR)/365),
              pet        = sum(pet.VAR)/(length(pet.VAR)/365),
              et         = (sum(output$ET_lm.VAR[,1])+sum(output$ET_wt.VAR[,1]))/n.years,
              sw_out     = sum(output$spill_vol.VAR[,2])/land.INFO[,"area"]/n.years,
@@ -294,7 +294,7 @@ execute<-function(n.years){
     
     #Calculate mean annual duration of catchment fluxes
     catchment_duration<-
-      tibble(rain_day   = length(precip.VAR[precip.VAR!=0])/(length(precip.VAR)/365),
+      tibble::tibble(rain_day   = length(precip.VAR[precip.VAR!=0])/(length(precip.VAR)/365),
              sw_out_day = length(output$spill_vol.VAR[output$spill_vol.VAR[,2]!=0,1])/n.years,
              gw_out_day = length(output$GW_bf.VAR[output$GW_bf.VAR[,1]<0,1])/n.years) %>%
       tidyr::gather(key="var") %>%
@@ -302,7 +302,7 @@ execute<-function(n.years){
     
     #Calculate mean daily fluxes at catchment scale
     catchment_fluxes<-
-      tibble(
+      tibble::tibble(
         day       = c(rep(seq(1,365),n.years),1), 
         y_w       = output$y_w.VAR[,2], 
         y_wt      = output$y_wt.VAR[,1],
