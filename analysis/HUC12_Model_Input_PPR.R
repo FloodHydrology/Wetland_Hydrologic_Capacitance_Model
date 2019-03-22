@@ -9,7 +9,7 @@
 # Step 1: Setup Worskspace ---------------------------------------------------------
 ####################################################################################
 # 1a. Clear Memory  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-#rm(list=ls(all=TRUE))
+rm(list=ls(all=TRUE))
 
 # 1b. Load Packages ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 library(sp)         # for spatial analysis
@@ -19,6 +19,7 @@ library(rgeos)      # for spatial analysis
 library(dplyr)      # for data processing
 library(rslurm)     # parallel computing
 library(geosphere)  # for spatial analysis
+library(parallel)   # for parallel computing
 
 # 1c. Define data dir ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 wd<-"//nfs/WHC-data/Regional_Analysis/PPR/"  # Define working directory for later reference
@@ -114,7 +115,30 @@ remove(dLe)
 source("R/climate_sim.R")
 climate<-climate_sim(ncdc_file_path = paste0(wd,"inputs/ncdc_Jamestown.csv"), 
                      lat_degrees    = 46.9, 
-                     elevation      = 1400)
+                     elevation      = 1400 * 0.3048)
 pet.VAR<-climate$pet.VAR
 precip.VAR<-climate$precip.VAR
 remove(climate)
+
+
+qc <- data.frame(precip.VAR)
+qc$pet.VAR <- pet.VAR
+names(qc) <- c("PRECIP", "PET")
+qc$day <- rep(seq(1,365), times = 1000)
+qc$year <- rep(seq(1,1000), each = 365)
+
+qc_summary_ann <- qc %>%
+  group_by(year) %>%
+  summarise(sum_P = sum(PRECIP), sum_PET = sum(PET)) 
+
+mean(qc_summary_ann$sum_P)
+mean(qc_summary_ann$sum_PET)
+
+qc_summary_daily<- qc %>%
+  group_by(day) %>%
+  summarise(mean_P = mean(PRECIP), mean_PET = mean(PET)) 
+
+library(ggplot2)
+
+ggplot(data = qc, aes(x = day, y = PRECIP, group = year)) + 
+  geom_line(alpha = 0.05)
