@@ -20,7 +20,7 @@ climate_sim<-function(ncdc_file_path, lat_degrees, elevation){
   data<-data[!duplicated(data$DATE),]                 #remove duplicates
   data$PRCP<-data$PRCP*25.4                           #convert to mm
   data$temp<-(data$TMAX+data$TMIN)/2                  # calculate average temp
-  data$temp<-(data$temp-32)*4/9                       # convert to celcius
+  data$temp<-(data$temp-32)*5/9                       # convert to celcius
   data<-data[,c("DATE","PRCP","temp")]                # create new matrix with cleaned data
   
   #2.2 Model Snowpack (Assume frozen precip <0*C and melt >3*C)
