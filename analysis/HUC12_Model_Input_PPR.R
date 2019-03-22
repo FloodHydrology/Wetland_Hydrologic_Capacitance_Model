@@ -12,6 +12,7 @@
 rm(list=ls(all=TRUE))
 
 # 1b. Load Packages ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+<<<<<<< HEAD
 library(sp)         # for spatial analysis
 library(raster)     # for spatial analysis
 library(rgdal)      # for spatial analysis
@@ -20,6 +21,15 @@ library(dplyr)      # for data processing
 library(rslurm)     # parallel computing
 library(geosphere)  # for spatial analysis
 library(parallel)   # for parallel computing
+=======
+# library(sp)         # for spatial analysis
+# library(raster)     # for spatial analysis
+# library(rgdal)      # for spatial analysis
+# library(rgeos)      # for spatial analysis
+# library(dplyr)      # for data processing
+# library(rslurm)     # parallel computing
+# library(geosphere)  # for spatial analysis
+>>>>>>> 9c0bea20c5e7938522239009b7d48dac2b5d6121
 
 # 1c. Define data dir ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 wd<-"//nfs/WHC-data/Regional_Analysis/PPR/"  # Define working directory for later reference
