@@ -25,8 +25,7 @@ Fig5_FUN <- function(data) {
   # Inter-regional comparison of wetland fluxes -------------------------------------------
   levels <- subset(data, scale == 'weltand' & day == 0)   # need to fix typo!
   levels <- subset(data, var == 'qf_in' | var == 'qf_out' | 
-                     var == 'SW_in' | var == 'SW_out' |
-                     var == 'GW_out')
+                     var == 'sw_out' | var == 'gw_out')
   
   
   p1 <- ggplot(levels, aes( x = var, y = value, fill = region)) + 
@@ -49,7 +48,8 @@ Fig5_FUN <- function(data) {
   
   
  p2 <- ggplot(levels, aes( x = var, y = value, fill = region)) + 
-    geom_boxplot(color = 'black', alpha = 0.7, outlier.shape = NA) +
+    geom_boxplot(color = 'black', alpha = 0.7) +
+   scale_y_continuous(limits = quantile(levels$value, c(0.1, 0.8)))+
     facet_wrap(~ var, ncol = 2, scales='free',
                strip.position = "top", 
                labeller = as_labeller(c(gw_out = "Groundwater Out", gw_out_day = "GW_OUT_DAY",

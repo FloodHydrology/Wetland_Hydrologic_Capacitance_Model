@@ -7,13 +7,14 @@ Fig4_FUN <- function(region = 'delmarva') {
 
 # Step 1: Setup Worskspace ---------------------------------------------------------
 # 1. Load data ---------------------------------------------------------------------
-rawdata <- read.table(paste('/nfs/WHC-data/Figure Generation/', region,'_output.csv', sep = ""),
+rawdata <- read.table(paste('/nfs/WHC-data/Figure Generation/', region,'.csv', sep = ""),
                       sep=",", header=TRUE)
 rawdata$value <- as.numeric(as.character(rawdata$value))
 
 levels <- subset(rawdata, scale == 'weltand' &        # need to fix typo!
                           (var == 'y_w' | var == 'gw_local' |
-                          var == 'spill_out'  | var == 'runoff_in'))   
+                          var == 'spill_out'  | var == 'runoff_in') 
+                          )   
 
 stat <- levels %>%
   group_by(day, var) %>%
@@ -44,11 +45,11 @@ p1 <- ggplot() +
         strip.text    = element_text(size = 12, face = 'bold')) +
   labs(x = 'Day of Year', title = paste('Figure 4a - ', toupper(region), sep = "" )) +
   facet_wrap(vars(var), 
-             nrow = 2, 
+             nrow = 3, 
              scales = 'free_y',
              strip.position = "left", 
              labeller = as_labeller(c(y_w = "Normalized Water Level", spill_out = "Spill Out (UNIT)",
-                                      gw_local = "Groundwater Exchange (UNIT)", runoff_in = "Runoff In (UNIT)") ))
+                                      gw_local = "Groundwater Exchange (UNIT)", runoff_in = "Runoff In (UNIT)")))
 
 setwd("/nfs/WHC-data/Figure Generation/Output")
 ggsave(filename = paste('Fig4_',region, '_wetlandscale.jpg',sep = ""), plot = p1, 
@@ -61,10 +62,13 @@ ggsave(filename = paste('Fig4_',region, '_wetlandscale.jpg',sep = ""), plot = p1
 # =================================================================================
 
 # 1. Load data ---------------------------------------------------------------------
-levels <- subset(rawdata, scale == 'catchment' & var == 'y_wt')        
+levels <- subset(rawdata, scale == 'catchment' &        # need to fix typo!
+                   (var == 'y_w' | var == 'y_wt' |
+                    var == 'spill_out'  | var == 'bf_out'))   
+
                    
 stat <- levels %>%
-  group_by(day) %>%
+  group_by(day, var) %>%
   summarise(x25th  = quantile(value, probs = 0.25, na.rm = T),
             median = quantile(value, probs = 0.50, na.rm = T),
             x75th  = quantile(value, probs = 0.75, na.rm = T))
@@ -85,7 +89,14 @@ p2 <- ggplot() +
         axis.text  = element_text(size = 12, face = 'bold', color = 'black'),
         axis.title = element_text(size = 14, face = 'bold'),
         legend.position = "none") +
-  labs(x = 'Day of Year', y = 'Normalized Wetland Stage', title = paste('Figure 4a - ', toupper(region), ' Catchment Scale', sep = "" )) 
+  labs(x = 'Day of Year', title = paste('Figure 4a - ', toupper(region), ' Catchment Scale', sep = "" )) +
+  facet_wrap(vars(var), 
+             nrow = 3, 
+             scales = 'free_y',
+             strip.position = "left", 
+             labeller = as_labeller(c(y_w = "Normalized Wetland Stage", spill_out = "Spill Out (UNIT)",
+                                      bf_out = "Baseflow Out (GW Out) (UNIT)", y_wt = "Normalized Water Table (UNIT)")))
+
   
 
 setwd("/nfs/WHC-data/Figure Generation/Output")
