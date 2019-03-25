@@ -279,7 +279,7 @@ execute<-function(n.years){
     output_wetland<-dplyr::bind_rows(wetland_balance, wetland_duration, wetland_fluxes) %>%
       dplyr::mutate(HUC12 = HUC12.shp$HUC12,
                     WetID = WetID, 
-                    scale = "weltand")
+                    scale = "wetland")
     
     #ii. Catchement scale estimates
     #Calcluate catchment scale annual water balance
