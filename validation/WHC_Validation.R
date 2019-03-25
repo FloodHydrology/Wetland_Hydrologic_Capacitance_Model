@@ -12,14 +12,15 @@ library(Evapotranspiration)
 library(lubridate)  # dealing with dates
 library(tidyverse)  # for data wrangling
 
-setwd('D:/OneDrive - University of Waterloo/Research/WHC Model/Wetland_Hydrologic_Capacitance_Model/')
+setwd("~/Wetland_Hydrologic_Capacitance_Model")
+# setwd('D:/OneDrive - University of Waterloo/Research/WHC Model/Wetland_Hydrologic_Capacitance_Model/')
 source('R/WHC_Individual.R')
 
 # 2. Bring in external data --------------------------------------------------------
 data <- read.csv('validation/precip.csv') 
 precip.VAR <- as.matrix(data$precip_mm)
 
-data <- read.csv('validation/pet.csv') 
+data <- read.csv('validation/PET.csv') 
 pet.VAR <- as.matrix(data$PET)
 
 remove(data)
@@ -53,7 +54,7 @@ giw.INFO[1,"s_wilt"]<-         0.17                           # soil moisture at
 giw.INFO[1,"k_sat"]<-          -0.27*1000                      # saturated condcuctivity (mm/day)
 giw.INFO[1,"RD"]<-             0.10*1000                      # for wetland??
 
-clay <- frac <-                15                             # guesstimate
+clay <-                        15                             # guesstimate
 giw.INFO[1,"b"]<-              12.524*(clay/100)+3.6907
 giw.INFO[1,"Sy"]<-             giw.INFO[1,"n"]*(1-giw.INFO[1,"s_fc"])
 giw.INFO[1,"y_w_0"]<-          0
