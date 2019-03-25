@@ -55,13 +55,9 @@ climate_sim<-function(ncdc_file_path, lat_degrees, elevation){
     df<-df[month(df$DATE)==month,]
     df$PRCP[is.na(df$PRCP)]<-0
     
-<<<<<<< HEAD
-    #2.4f fit gamma dist
-    gamma<-fitdistr(df$PRCP[df$PRCP>0], "gamma")
-=======
+
     #2.3f fit gamma dist
     gamma<-fitdistr(df$PRCP[df$PRCP>0.05], "gamma")
->>>>>>> 388c8342bf44017d0a72d2c1755b8a0c658547ea
     
     #2.3g prep df for markov model
     df<-split(df$PRCP, year(df$DATE))
