@@ -40,8 +40,8 @@ rawdata3 <- read.table('/nfs/WHC-data/Figure Generation/florida.csv', sep=",", h
 rawdata3$value <- as.numeric(as.character(rawdata3$value))
 rawdata3$region <- 'FLORIDA'
 
-remove(rawdata, rawdata2, rawdata3)
 data <- do.call("rbind", list(rawdata, rawdata2, rawdata3))
+# remove(rawdata, rawdata2, rawdata3) #don't actually need
 
 setwd("~/Wetland_Hydrologic_Capacitance_Model/Figures")
 source('Fig5_FUN.R')

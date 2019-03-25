@@ -11,7 +11,7 @@ rawdata <- read.table(paste('/nfs/WHC-data/Figure Generation/', region,'.csv', s
                       sep=",", header=TRUE)
 rawdata$value <- as.numeric(as.character(rawdata$value))
 
-levels <- subset(rawdata, scale == 'weltand' &        # need to fix typo!
+levels <- subset(rawdata, scale == 'wetland' &        # need to fix typo!
                           (var == 'y_w' | var == 'gw_local' |
                           var == 'spill_out'  | var == 'runoff_in') 
                           )   

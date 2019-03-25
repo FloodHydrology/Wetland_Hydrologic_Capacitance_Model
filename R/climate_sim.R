@@ -55,6 +55,7 @@ climate_sim<-function(ncdc_file_path, lat_degrees, elevation){
     df<-df[month(df$DATE)==month,]
     df$PRCP[is.na(df$PRCP)]<-0
     
+
     #2.3f fit gamma dist
     gamma<-fitdistr(df$PRCP[df$PRCP>0.05], "gamma")
     
