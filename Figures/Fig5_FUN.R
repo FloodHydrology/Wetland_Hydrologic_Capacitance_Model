@@ -23,7 +23,7 @@ Fig5_FUN <- function(data) {
   
   
   # Inter-regional comparison of wetland fluxes -------------------------------------------
-  levels <- subset(data, scale == 'weltand' & day == 0)   # need to fix typo!
+  levels <- subset(data, scale == 'wetland' & day == 0)   # need to fix typo!
   levels <- subset(data, var == 'qf_in' | var == 'qf_out' | 
                      var == 'sw_out' | var == 'gw_out')
   
