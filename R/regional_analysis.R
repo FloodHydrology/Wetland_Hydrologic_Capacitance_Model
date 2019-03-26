@@ -192,6 +192,9 @@ land.INFO[,"wetland_area"]<-    max(rowSums(area))*(1000^2)
 land.INFO[,"volume_max"]<-      max(rowSums(volume))*(1000^3)
 land.INFO[,"kb"]<-              0.046                                         #Defined fromo literature. (Going to do with Gauge analysis eventually)
 
+#4.5 Define clay layer for both land.INFO and giw.INFO
+giw.INFO[,"y_cl"]<-land.INFO[,"y_cl"]
+
 # 5 Populate lumped.INFO table~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # 5.1 #Create lumped.INFO table
 lumped.INFO<-c("r_w","dL", "dLe") #geometric characteristics
