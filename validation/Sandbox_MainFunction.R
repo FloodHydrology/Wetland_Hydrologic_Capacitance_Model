@@ -34,7 +34,7 @@ giw.ID <- WetID
 load(file = 'PPR_ProcessedInputs_ID26_selected.RData')
 
 # 4. Source and Run WHC Model ----------------------------------------------------
-source("~/Wetland_Hydrologic_Capacitance_Model/R/WHC_Individual.R")
+source("~/Wetland_Hydrologic_Capacitance_Model/R/WHC_Sandbox.R")
 
 output <- wetland.hydrology(giw.INFO,
                             land.INFO,
