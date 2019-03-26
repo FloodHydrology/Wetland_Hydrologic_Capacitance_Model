@@ -21,6 +21,7 @@
 # library(geosphere)  # for spatial analysis
 
 # 1c. Define data dir ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+setwd("~/Wetland_Hydrologic_Capacitance_Model")
 wd<-"//nfs/WHC-data/Regional_Analysis/PPR/"  # Define working directory for later reference
 
 ####################################################################################
