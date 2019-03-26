@@ -135,7 +135,7 @@ for(i in 1:length(wetlands_temp.shp)){
   giw.INFO[i,"y_cl"]<-           -1*temp_soils["y_cl"]
   giw.INFO[i,"y_c"]<-            - temp_soils["y_c"]                       #critical depth (mm)
   giw.INFO[i,"s_wilt"]<-         temp_soils["s_w"]/100                       # soil moisture at permanent wilting point
-  giw.INFO[i,"k_sat"]<-          -temp_soils["ksat"]*24                      # saturated condcuctivity (mm/day)
+  giw.INFO[i,"k_sat"]<-          temp_soils["ksat"]*24                      # saturated condcuctivity (mm/day)
   giw.INFO[i,"RD"]<-             ifelse((temp_rd*1000)<temp_soils["y_cl"],   # Rooting Depth (mm)
                                         -1*temp_rd*1000,
                                         -1*temp_soils["y_cl"])
@@ -180,7 +180,7 @@ land.INFO[,"psi"]<-             -16662*(temp_soils["n"]^7.8831)             # ai
 land.INFO[,"y_cl"]<-            -1*temp_soils["y_cl"]                       # confining layer depth (mm) from SSURGO
 land.INFO[,"y_c"]<-             -temp_soils["y_c"]                          # critical depth (mm)
 land.INFO[,"s_wilt"]<-          temp_soils["s_w"]/100                       # soil moisture at permanent wilting point
-land.INFO[,"k_sat"]<-           -temp_soils["ksat"]*24                      # saturated condcuctivity (mm/day)
+land.INFO[,"k_sat"]<-           temp_soils["ksat"]*24                       # saturated condcuctivity (mm/day)
 land.INFO[,"RD"]<-              RD                                          # Rooting Depth (mm)
 land.INFO[,"b"]<-               12.524*(temp_soils["clay"]/100)+3.6907      # Presssure Head Power-Law Coefficient (b) --Relationship developed from Clapp and Hornberger, 1978
 land.INFO[,"y_wt_0"]<-          0
