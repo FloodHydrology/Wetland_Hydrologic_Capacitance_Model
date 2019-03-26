@@ -293,7 +293,6 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
       
       
       #change in wetland storage (mm^3)
-      area_lumped_wetland<-
         dV_w.VAR[day,"wetland"]<<-precip.VAR[day]*land.INFO[,"wetland_area"]-
         pet.VAR[day]*As.VAR[day,"wetland"]+
         GW_local.VAR[day,"wetland"]+
