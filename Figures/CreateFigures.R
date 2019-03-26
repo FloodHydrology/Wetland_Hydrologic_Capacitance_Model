@@ -22,9 +22,11 @@ library(ggfortify)    # for reshaping the PCA results and plotting in ggplot
 setwd("~/Wetland_Hydrologic_Capacitance_Model/Figures")
 source('Fig4_FUN.R')
 
-Fig4_FUN('ppr')
-Fig4_FUN('delmarva')
-Fig4_FUN('florida')
+bounds <- c(0.25, 0.75)
+
+Fig4_FUN('ppr', bounds)
+Fig4_FUN('delmarva', bounds)
+Fig4_FUN('florida', bounds)
 
 # Create Figure 5 - Seasonality Plots ------------------------------------------------
 # Note: Output plots are saved in nfs/WHC-data/Figure Generation/Output

@@ -1,4 +1,4 @@
-Fig4_FUN <- function(region = 'delmarva') {
+Fig4_FUN <- function(region = 'delmarva', bounds) {
 ###################################################################################
 #Name: Wetlandscape Hydrology - Figure 4 Seasonality in depth and fluxes
 #Date: 14 JAN 2019
@@ -18,9 +18,9 @@ levels <- subset(rawdata, scale == 'wetland' &        # need to fix typo!
 
 stat <- levels %>%
   group_by(day, var) %>%
-  summarise(x25th  = quantile(value, probs = 0.25, na.rm = T),
+  summarise(x25th  = quantile(value, probs = bounds[1], na.rm = T),
             median = quantile(value, probs = 0.50, na.rm = T),
-            x75th  = quantile(value, probs = 0.75, na.rm = T))
+            x75th  = quantile(value, probs = bounds[2], na.rm = T))
 
 stat2 <- melt(stat, by_id = 'day')
 stat2$day <- as.numeric(as.character(stat$day))
@@ -68,9 +68,9 @@ levels <- subset(rawdata, scale == 'catchment' &        # need to fix typo!
                    
 stat <- levels %>%
   group_by(day, var) %>%
-  summarise(x25th  = quantile(value, probs = 0.25, na.rm = T),
+  summarise(x25th  = quantile(value, probs = bounds[1], na.rm = T),
             median = quantile(value, probs = 0.50, na.rm = T),
-            x75th  = quantile(value, probs = 0.75, na.rm = T))
+            x75th  = quantile(value, probs = bounds[2], na.rm = T))
 
 stat2 <- melt(stat, by_id = 'day')
 stat2$day <- as.numeric(as.character(stat$day))
