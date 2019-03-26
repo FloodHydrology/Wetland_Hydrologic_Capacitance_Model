@@ -110,11 +110,11 @@ for(i in 1:length(wetlands_temp.shp)){
                    0)
   
   # d. Calculate relative wetland datum
-  dz<-cellStats(mask(dem_temp.grd, wetlands_temp.shp[i,]), median, na.rm=T)- #median elevation of wetland elevation
-    cellStats(mask(dem_temp.grd, wetlands_temp.shp[wetlands_temp.shp$WetID!=WetID,]), median, na.rm=T) #median elevation of all wetlands
-  dz<-ifelse(is.na(dz)==TRUE, 0, dz)
-  dz<-ifelse(dz==Inf, 0, dz)
-  dz<-dz*1000
+  # dz<-cellStats(mask(dem_temp.grd, wetlands_temp.shp[i,]), median, na.rm=T)- #median elevation of wetland elevation
+  #   cellStats(mask(dem_temp.grd, wetlands_temp.shp[wetlands_temp.shp$WetID!=WetID,]), median, na.rm=T) #median elevation of all wetlands
+  # dz<-ifelse(is.na(dz)==TRUE, 0, dz)
+  # dz<-ifelse(dz==Inf, 0, dz)
+  # dz<-dz*1000
   
   # e. Calcluate wetland rooting depth
   temp_rd<-raster::crop(root_temp.grd, wetlands_temp.shp[i,])
@@ -146,7 +146,7 @@ for(i in 1:length(wetlands_temp.shp)){
   giw.INFO[i,"vol_ratio"]<-      temp_fac                                   # ratio of upstream wetland volume
   giw.INFO[i, "dL"] <-           wetlands_temp.shp$dist2NearWet[i]*1000
   giw.INFO[i, "dLe"] <-          wetlands_temp.shp$dLe[i]*1000
-  giw.INFO[i,"dz"]<-             dz
+  giw.INFO[i,"dz"]<-             wetlands_temp.shp$dz[i]
 }
 
 # 4 Populate land.INFO table~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
