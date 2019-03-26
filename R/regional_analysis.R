@@ -12,39 +12,39 @@ regional_analysis<-function(WetID,
                            dem.grd, 
                            nfw_centroid.shp, 
                            rootdepth.grd){ #
-                              
+    
 # 1 tidyr::gather Required Data~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # 1.1 Identify wetland of interest
-main_wetland.shp<-wetlands.shp[wetlands.shp$WetID==WetID,]
-main_wetland<-WetID
+main_wetland.shp    <- wetlands.shp[wetlands.shp$WetID==WetID,]
+main_wetland        <- WetID
 
 # 1.2 Select spatial layers based on WetID  
-catchment_temp.shp<-catchments.shp[main_wetland.shp,]
+catchment_temp.shp  <- catchments.shp[main_wetland.shp,]
 if(length(catchment_temp.shp)>1){catchment_temp.shp<-catchment_temp.shp[1,]}
-wetlands_temp.shp<-wetlands.shp[catchment_temp.shp,]
-soils_temp.shp<-soils.shp[catchment_temp.shp,]
-soils_temp.shp<-raster::crop(soils_temp.shp,catchment_temp.shp)
-dem_temp.grd<-raster::crop(dem.grd, catchment_temp.shp)
-dem_temp.grd<-mask(dem_temp.grd, catchment_temp.shp)
-dem_temp.grd<-dem_temp.grd/100 #Convert to m
-fac_temp.grd<-raster::crop(fac.grd, catchment_temp.shp)
-fac_temp.grd<-mask(fac_temp.grd, catchment_temp.shp)
-root_temp.grd<-raster::crop(rootdepth.grd, catchment_temp.shp)
-root_temp.grd<-mask(rootdepth.grd, catchment_temp.shp)
+wetlands_temp.shp   <- wetlands.shp[catchment_temp.shp,]
+soils_temp.shp      <- soils.shp[catchment_temp.shp,]
+soils_temp.shp      <- raster::crop(soils_temp.shp,catchment_temp.shp)
+dem_temp.grd        <- raster::crop(dem.grd, catchment_temp.shp)
+dem_temp.grd        <- mask(dem_temp.grd, catchment_temp.shp)
+dem_temp.grd        <- dem_temp.grd/100 #Convert to m
+fac_temp.grd        <- raster::crop(fac.grd, catchment_temp.shp)
+fac_temp.grd        <- mask(fac_temp.grd, catchment_temp.shp)
+root_temp.grd       <- raster::crop(rootdepth.grd, catchment_temp.shp)
+root_temp.grd       <- mask(rootdepth.grd, catchment_temp.shp)
 
 # 1.3 For now, add catchment aggregate soils data to soils with missing data
-soils_temp.shp$y_c[is.na(soils_temp.shp$y_c)]<-mean(soils_temp.shp$y_c, na.rm=T)
-soils_temp.shp$y_cl[is.na(soils_temp.shp$y_cl)]<-mean(soils_temp.shp$y_cl, na.rm=T)
-soils_temp.shp$s_fc[is.na(soils_temp.shp$s_fc)]<-mean(soils_temp.shp$s_fc, na.rm=T)
-soils_temp.shp$s_w[is.na(soils_temp.shp$s_w)]<-mean(soils_temp.shp$s_w, na.rm=T)
-soils_temp.shp$n[is.na(soils_temp.shp$n)]<-mean(as.numeric(paste(soils_temp.shp$n)), na.rm=T)
-soils_temp.shp$clay[is.na(soils_temp.shp$clay)]<-mean(soils_temp.shp$clay, na.rm=T)
-soils_temp.shp$ksat[is.na(soils_temp.shp$ksat)]<-mean(soils_temp.shp$ksat, na.rm=T)
+soils_temp.shp$y_c[is.na(soils_temp.shp$y_c)]   <- mean(soils_temp.shp$y_c, na.rm=T)
+soils_temp.shp$y_cl[is.na(soils_temp.shp$y_cl)] <- mean(soils_temp.shp$y_cl, na.rm=T)
+soils_temp.shp$s_fc[is.na(soils_temp.shp$s_fc)] <- mean(soils_temp.shp$s_fc, na.rm=T)
+soils_temp.shp$s_w[is.na(soils_temp.shp$s_w)]   <- mean(soils_temp.shp$s_w, na.rm=T)
+soils_temp.shp$n[is.na(soils_temp.shp$n)]       <- mean(as.numeric(paste(soils_temp.shp$n)), na.rm=T)
+soils_temp.shp$clay[is.na(soils_temp.shp$clay)] <- mean(soils_temp.shp$clay, na.rm=T)
+soils_temp.shp$ksat[is.na(soils_temp.shp$ksat)] <- mean(soils_temp.shp$ksat, na.rm=T)
 
 # 2 Estimate area and volume to stage relationships~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # 2.1 Create vectors to store area and volume to stage relationships
-area<-matrix(0, ncol=length(wetlands_temp.shp), nrow=100)
-volume<-matrix(0, ncol=length(wetlands_temp.shp), nrow=100)
+area     <- matrix(0, ncol=length(wetlands_temp.shp), nrow=100)
+volume   <- matrix(0, ncol=length(wetlands_temp.shp), nrow=100)
 
 # 2.2 Use loop to calculate based on previously published relationships
 for(i in 1:length(wetlands_temp.shp)){
@@ -68,12 +68,12 @@ for(i in 1:length(wetlands_temp.shp)){
   volume.fun<-function(h){0.25*((area.fun(h)/10000)^1.4742)*10000}
   
   #Apply functions
-  n.col<-which(wetlands_temp.shp$WetID==TempID)
-  n.rows<-length(area.fun(seq(0,hmax,0.05)))
-  area[1:n.rows,n.col]<-area.fun(seq(0,hmax,0.05))
-  area[(n.rows+1):100,n.col]<-area.fun(hmax)
-  volume[1:n.rows,n.col]<-volume.fun(seq(0,hmax,0.05))
-  volume[(n.rows+1):100,n.col]<-volume.fun(hmax)
+  n.col   <- which(wetlands_temp.shp$WetID==TempID)
+  n.rows  <- length(area.fun(seq(0,hmax,0.05)))
+  area[1:n.rows,n.col]         <- area.fun(seq(0,hmax,0.05))
+  area[(n.rows+1):100,n.col]   <- area.fun(hmax)
+  volume[1:n.rows,n.col]       <- volume.fun(seq(0,hmax,0.05))
+  volume[(n.rows+1):100,n.col] <- volume.fun(hmax)
 }
 
 # 3 Populate GIW.INFO Tables ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
