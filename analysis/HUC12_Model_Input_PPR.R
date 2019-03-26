@@ -21,7 +21,6 @@
 # library(geosphere)  # for spatial analysis
 
 # 1c. Define data dir ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-setwd("~/Wetland_Hydrologic_Capacitance_Model")
 wd<-"//nfs/WHC-data/Regional_Analysis/PPR/"  # Define working directory for later reference
 
 ####################################################################################
@@ -108,6 +107,26 @@ dLe<-dLe[!duplicated(dLe[,1]),]
 #Merge with wetlands.shp
 wetlands.shp<-merge(wetlands.shp, dLe, by="WetID")
 remove(dLe)
+
+#3.6 Estimate dz [difference in upland and wetland elevation]
+#download function
+source("R/dz_fun.R")
+#run function
+dz<-mclapply(
+  X=wetlands.shp$WetID, 
+  FUN=dz.fun, 
+  mc.silent = T, 
+  mc.cores = detectCores()
+)
+dz<-do.call(rbind, dz)
+dz<-data.frame(dz)
+colnames(dz)<-c("WetID","dz")
+dz<-dz[dz$WetID!=0,]
+dz<-dz[!duplicated(dz[,1]),]
+
+#merge with wetland.shp
+wetlands.shp<-merge(wetlands.shp, dz, by="WetID")
+remove(dz)
 
 ####################################################################################
 # Step 4: Climate data--------------------------------------------------------------

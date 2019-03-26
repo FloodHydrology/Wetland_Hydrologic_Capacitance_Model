@@ -3,7 +3,7 @@ divide_dist.fun<-function(cat){
   #a. Identify catchment of interest
   cat.shp<-catchments.shp[cat,]
   
-  #b. Break catchment into 100 equally spaced points
+  #b. Break catchment boundary into 100 equally spaced points
   cat.grd<-raster(cat.shp)
   extent(cat.grd)<-extent(cat.shp)
   cellsize<-2*pi*((gArea(cat.shp)/pi)^.5)/100 #paremeter/1000
