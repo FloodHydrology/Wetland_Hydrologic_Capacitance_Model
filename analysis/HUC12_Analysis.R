@@ -64,7 +64,7 @@ n.nodes<-12
 n.cpus<-8
 
 #define functions from file 
-source("R/WHC_2.R")
+source("R/WHC_3.R")
 source("R/regional_analysis.R")
 
 #3.2 Delmarva----------------------------------------------------------------------
@@ -98,7 +98,7 @@ delmarva<- slurm_apply(dmv_fun,
 
 #3.3 PPR----------------------------------------------------------------------
 #a remove previous data
-remove(list=ls()[ls()!=   'ppr' &
+remove(list=ls()[ls()!= 'ppr' &
                  ls()!= 'delmarva'&
                  ls()!= 'cluster_name' &
                  ls()!= 'time_limit' &   
