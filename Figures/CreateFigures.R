@@ -14,7 +14,8 @@ library(reshape2)
 library(ggplot2)
 library(dplyr)
 library(tidyr)
-library(data.table)
+library(data.table)   # for faster reading
+library(ggfortify)    # for reshaping the PCA results and plotting in ggplot
 
 # Create Figure 4 - Seasonality Plots ------------------------------------------------
 # Note: Output plots are saved in nfs/WHC-data/Figure Generation/Output
@@ -49,8 +50,6 @@ source('Fig5_FUN.R')
 
 Fig5_FUN(data)
 
-
-# BROKEN ----NEED TO FIX!!!!! ):     ): --------------------------------------
 # Create Figure 6 - PCA -------------------------------------------------------
 # Note: Output plots are saved in nfs/WHC-data/Figure Generation/Output
 setwd("~/Wetland_Hydrologic_Capacitance_Model/Figures")

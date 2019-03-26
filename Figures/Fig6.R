@@ -21,17 +21,15 @@ rawdata1 <- data.table::fread('/nfs/WHC-data/Figure Generation/delmarva.csv')
 rawdata1$value <- as.numeric(as.character(rawdata1$value))
 rawdata1$region <- 'DEL'
 
-
-rawdata2 <- data.table::fread('/nfs/WHC-data/Figure Generation/ppr.csv', sep=",", header=TRUE)
+rawdata2 <- data.table::fread('/nfs/WHC-data/Figure Generation/ppr.csv')
 rawdata2$value <- as.numeric(as.character(rawdata2$value))
 rawdata2$region <- 'PPR'
 
-rawdata3 <- data.table::fread('/nfs/WHC-data/Figure Generation/florida.csv', sep=",", header=TRUE)
+rawdata3 <- data.table::fread('/nfs/WHC-data/Figure Generation/florida.csv')
 rawdata3$value <- as.numeric(as.character(rawdata3$value))
 rawdata3$region <- 'FLR'
 
 data <- rbind(rawdata1, rawdata2, rawdata3)
-
 
 df <- data %>%
   filter(day == 0) %>%
