@@ -14,6 +14,7 @@ library(reshape2)
 library(ggplot2)
 library(dplyr)
 library(tidyr)
+library(data.table)
 
 # Create Figure 4 - Seasonality Plots ------------------------------------------------
 # Note: Output plots are saved in nfs/WHC-data/Figure Generation/Output
@@ -28,15 +29,15 @@ Fig4_FUN('florida')
 # Note: Output plots are saved in nfs/WHC-data/Figure Generation/Output
 
 # 1. Load data (to be used for figure 6 as well) -------------------------------------
-rawdata <- read.table('/nfs/WHC-data/Figure Generation/delmarva.csv', sep=",", header=TRUE)
+rawdata <- data.table::fread('/nfs/WHC-data/Figure Generation/delmarva.csv')
 rawdata$value <- as.numeric(as.character(rawdata$value))
 rawdata$region <- 'DELMARVA'
 
-rawdata2 <- read.table('/nfs/WHC-data/Figure Generation/ppr.csv', sep=",", header=TRUE)
+rawdata2 <- data.table::fread('/nfs/WHC-data/Figure Generation/ppr.csv')
 rawdata2$value <- as.numeric(as.character(rawdata2$value))
 rawdata2$region <- 'PPR'
 
-rawdata3 <- read.table('/nfs/WHC-data/Figure Generation/florida.csv', sep=",", header=TRUE)
+rawdata3 <- data.table::fread('/nfs/WHC-data/Figure Generation/florida.csv')
 rawdata3$value <- as.numeric(as.character(rawdata3$value))
 rawdata3$region <- 'FLORIDA'
 

@@ -26,7 +26,7 @@ giw.ID <- WetID
 # 3. Generate .INFO Files ---------------------------------------------------------
   # Run all of regional_analysis.R using WetID <- 26
   # Run until lumped.INFO is run
-  # setwd("/nfs/WHC-data/Sandbox Model")
+  setwd("/nfs/WHC-data/Sandbox Model")
   # save.image(file = 'PPR_ProcessedInputs_ID26_all.RData')
   # save(HUC12.shp, area, giw.INFO, land.INFO, lumped.INFO, pet.VAR, precip.VAR, volume,
   #      file = 'PPR_ProcessedInputs_ID26_selected.RData')
@@ -141,7 +141,7 @@ if(is.list(output)==T){
   output2<-dplyr::bind_rows(output_wetland,output_catchment)
 }
 
-plot(output$y_w.VAR[,3], cex = 0.3, ylim=c(-500, 500))
+plot(output$y_w.VAR[,3]+620, cex = 0.3, ylim=c(-500, 800))
 lines(output$y_wt.VAR[,1], col = 'blue')
 legend(0, 0, legend=c("Wetland Stage (y_w)", "Upland Water Table (y_wt)"),
        col=c("black", "blue"), lty=1:1, cex=0.8)
