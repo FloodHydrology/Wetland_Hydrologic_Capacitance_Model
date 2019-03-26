@@ -236,13 +236,13 @@ execute<-function(n.years){
     #Calculate wetland scale annual water balance
     wetland_balance<-
       tibble::tibble(precip     = sum(precip.VAR)/(length(precip.VAR)/365),
-             pet        = sum(pet.VAR)/(length(pet.VAR)/365),
-             et         = (sum(output$ET_lm.VAR[,3])+sum(output$ET_wt.VAR[,3]))/n.years,
-             qf_in      = sum(output$runoff_vol.VAR[,3])/giw.INFO["area_wetland"]/n.years,
-             qf_out     = sum(output$spill_vol.VAR[output$runoff_vol.VAR[,3]!=0,3])/n.years/giw.INFO["area_wetland"],
-             sw_out     = sum(output$spill_vol.VAR[output$runoff_vol.VAR[,3]==0,3])/n.years/giw.INFO["area_wetland"],
-             gw_out     = sum(output$GW_local.VAR[output$GW_local.VAR<0])/giw.INFO["area_wetland"]/n.years,
-             gw_in      = sum(output$GW_local.VAR[,3][output$GW_local.VAR>0])/giw.INFO["area_wetland"]/n.years) %>%
+             pet        = sum(pet.VAR,na.rm=T)/(length(pet.VAR)/365),
+             et         = (sum(output$ET_lm.VAR[,3],na.rm=T)+sum(output$ET_wt.VAR[,3],na.rm=T))/n.years,
+             qf_in      = sum(output$runoff_vol.VAR[,3], na.rm=T)/giw.INFO["area_wetland"]/n.years,
+             qf_out     = sum(output$spill_vol.VAR[output$runoff_vol.VAR[,3]!=0,3], na.rm=T)/n.years/giw.INFO["area_wetland"],
+             sw_out     = sum(output$spill_vol.VAR[output$runoff_vol.VAR[,3]==0,3], na.rm=T)/n.years/giw.INFO["area_wetland"],
+             gw_out     = sum(output$GW_local.VAR[output$GW_local.VAR<0], na.rm=T)/giw.INFO["area_wetland"]/n.years,
+             gw_in      = sum(output$GW_local.VAR[,3][output$GW_local.VAR>0], na.rm=T)/giw.INFO["area_wetland"]/n.years) %>%
       tidyr::gather(key="var") %>%
       dplyr::mutate(day=0)
     
@@ -279,7 +279,7 @@ execute<-function(n.years){
     output_wetland<-dplyr::bind_rows(wetland_balance, wetland_duration, wetland_fluxes) %>%
       dplyr::mutate(HUC12 = HUC12.shp$HUC12,
                     WetID = WetID, 
-                    scale = "weltand")
+                    scale = "wetland")
     
     #ii. Catchement scale estimates
     #Calcluate catchment scale annual water balance
