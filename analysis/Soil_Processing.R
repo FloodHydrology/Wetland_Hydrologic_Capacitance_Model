@@ -109,10 +109,10 @@ tf-t0
 output<-
   do.call(rbind,x) %>% 
   mutate(mukey = as.numeric(paste(mukey)), 
-         y_cl  = as.numeric(paste(y_cl)), 
-         clay  = as.numeric(paste(clay)),
+         y_cl  = as.numeric(paste(y_cl))*10,  #Convert to mm 
+         clay  = as.numeric(paste(clay)),    
          sand  = as.numeric(paste(sand)),
-         ksat  = as.numeric(paste(ksat)),
+         ksat  = as.numeric(paste(ksat))*86.4,#Convert to mm/day
          s_fc  = as.numeric(paste(s_fc)),
          s_w   = as.numeric(paste(s_w)),
          n     = as.numeric(paste(n)),
