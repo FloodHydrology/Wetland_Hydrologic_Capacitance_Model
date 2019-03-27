@@ -116,7 +116,7 @@ output<-
          s_fc  = as.numeric(paste(s_fc)),
          s_w   = as.numeric(paste(s_w)),
          n     = as.numeric(paste(n)),
-         y_c   = as.numeric(paste(y_c))) %>%
+         y_c   = as.numeric(paste(y_c))*1000) %>% #Convert to mm
   mutate(y_cl = na_if(y_cl, -Inf), 
          y_cl = na_if(y_cl, Inf))
 
