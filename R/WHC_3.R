@@ -258,7 +258,7 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
       ET_wt.VAR[day, wet.VAR]*giw.INFO[wet.INFO,"area_wetland"]+
       GW_local.VAR[day,wet.VAR]+
       runoff_vol.VAR[day,wet.VAR]+
-      spill_vol.VAR[day,1]*giw.INFO[wet.INFO,"vol_ratio"]
+      spill_vol.VAR[day,"wetland"]*giw.INFO[wet.INFO,"vol_ratio"]
     
     #Characterize the change in water level
     #Calculate the next days volume
