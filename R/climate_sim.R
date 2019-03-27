@@ -185,6 +185,7 @@ climate_sim<-function(ncdc_file_path, lat_degrees, elevation){
   pet.VAR[pet.VAR<0]<-0
   pet.VAR[is.na(pet.VAR)==T]<-0
 
+  #3.6 GSI for Phenology modification (from Ye paper)
   GSI_TMIN <- -5
   GSI_TMAX <- 10
   data$GSI <- ifelse(data$TAVG < GSI_TMIN,0, 
@@ -193,7 +194,7 @@ climate_sim<-function(ncdc_file_path, lat_degrees, elevation){
   
   pet.VAR <- pet.VAR * data$GSI
   
-  #3.6 Estimate median PET for each julian day
+  #3.7 Estimate median PET for each julian day
   data$PET<-pet.VAR
   data<-data[,c("DATE","PET")]
   data$DATE<-strptime(data$DATE, format="%Y-%m-%d")
