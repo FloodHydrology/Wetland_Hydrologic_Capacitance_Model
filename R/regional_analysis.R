@@ -238,14 +238,16 @@ execute<-function(n.years){
     #i Wetland Scale Estimates
     #Calculate wetland scale annual water balance
     wetland_balance<-
-      tibble::tibble(precip     = sum(precip.VAR)/(length(precip.VAR)/365),
+      tibble::tibble(
+             precip     = sum(precip.VAR)/(length(precip.VAR)/365),
              pet        = sum(pet.VAR,na.rm=T)/(length(pet.VAR)/365),
              et         = (sum(output$ET_lm.VAR[,3],na.rm=T)+sum(output$ET_wt.VAR[,3],na.rm=T))/n.years,
-             qf_in      = sum(output$runoff_vol.VAR[,3], na.rm=T)/giw.INFO["area_wetland"]/n.years,
-             qf_out     = sum(output$spill_vol.VAR[output$runoff_vol.VAR[,3]!=0,3], na.rm=T)/n.years/giw.INFO["area_wetland"],
-             sw_out     = sum(output$spill_vol.VAR[output$runoff_vol.VAR[,3]==0,3], na.rm=T)/n.years/giw.INFO["area_wetland"],
-             gw_out     = sum(output$GW_local.VAR[output$GW_local.VAR<0], na.rm=T)/giw.INFO["area_wetland"]/n.years,
-             gw_in      = sum(output$GW_local.VAR[,3][output$GW_local.VAR>0], na.rm=T)/giw.INFO["area_wetland"]/n.years) %>%
+             #qf_in      = sum(output$runoff_vol.VAR[,3], na.rm=T)/giw.INFO["area_wetland"]/n.years,
+             #qf_out     = sum(output$spill_vol.VAR[output$runoff_vol.VAR[,3]!=0,3], na.rm=T)/n.years/giw.INFO["area_wetland"],
+             sw_in      = sum((output$spill_vol.VAR[,2]+output$runoff_vol.VAR[,3])*giw.INFO["vol_ratio"])/n.years/giw.INFO["area_wetland"],
+             sw_out     = sum(output$spill_vol.VAR[,3], na.rm=T)/n.years/giw.INFO["area_wetland"],
+             gw_out     = -1*sum(output$GW_local.VAR[output$GW_local.VAR[,3]<0,3], na.rm=T)/giw.INFO["area_wetland"]/n.years,
+             gw_in      = sum(output$GW_local.VAR[,3][output$GW_local.VAR[,3]>0], na.rm=T)/giw.INFO["area_wetland"]/n.years) %>%
       tidyr::gather(key="var") %>%
       dplyr::mutate(day=0)
     
