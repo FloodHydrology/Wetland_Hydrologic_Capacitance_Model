@@ -149,15 +149,16 @@ climate_sim<-function(ncdc_file_path, lat_degrees, elevation){
   data<-merge(TMIN, TMAX, by="Group.1")
   colnames(data)<-c("DATE","TMIN","TMAX")
   data$DATE<-strptime(data$DATE, format = "%Y-%m-%d") #convert data to POSIXlt format
-  #data$TMAX<-(data$TMAX-32)*4/9 
-  #data$TMIN<-(data$TMIN-32)*4/9
+  data$TMAX<-(data$TMAX-32)*5/9 
+  data$TMIN<-(data$TMIN-32)*5/9
+  data$TAVG <- (data$TMIN + data$TMAX)/2
   
   #3.2 Calculate PET
   climatedata<-data.frame(Year  = year(data$DATE), 
                           Month = month(data$DATE), 
                           Day   = day(data$DATE), 
-                          Tmax  = (data$TMAX-32)*5/9, 
-                          Tmin  = (data$TMIN-32)*5/9)
+                          Tmax  = data$TMAX, 
+                          Tmin  = data$TMIN)
   climatedata<-climatedata[climatedata$Tmax>-1000,]
   climatedata<-climatedata[climatedata$Tmin>-1000,]
   climatedata<-climatedata[order(climatedata$Year),]
@@ -184,6 +185,14 @@ climate_sim<-function(ncdc_file_path, lat_degrees, elevation){
   pet.VAR[pet.VAR<0]<-0
   pet.VAR[is.na(pet.VAR)==T]<-0
 
+  GSI_TMIN <- -5
+  GSI_TMAX <- 10
+  data$GSI <- ifelse(data$TAVG < GSI_TMIN,0, 
+                 ifelse(data$TAVG > GSI_TMAX, 1,
+                        (data$TAVG - GSI_TMIN)/(GSI_TMAX - GSI_TMIN)))
+  
+  pet.VAR <- pet.VAR * data$GSI
+  
   #3.6 Estimate median PET for each julian day
   data$PET<-pet.VAR
   data<-data[,c("DATE","PET")]
