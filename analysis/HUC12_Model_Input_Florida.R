@@ -67,9 +67,7 @@ nfw_centroid.shp<-readOGR(paste0(wd,"inputs/."),"NFW")
 nfw_centroid.shp<-spTransform(nfw_centroid.shp, p)
 
 #2.9 Rooting depth grid
-rootdepth.grd<-raster(paste0(wd,"inputs/maxroot.tif"))                   
-rootdepth.grd<-projectRaster(rootdepth.grd, crs=p)   
-rootdepth.grd<-raster::resample(rootdepth.grd, dem.grd)  
+rootdepth.grd<-dem.grd*0+400
 
 ####################################################################################
 # Step 3: Wetland Processing--------------------------------------------------------
