@@ -403,7 +403,16 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
       y_wt.VAR[day+1,"land"]<<-0
     }else{
       if((y_wt.VAR[day,"land"]+dy_wt.VAR[day,"land"])<land.INFO[,"y_cl"]){
+        #Calculate deficit
+        #divide deficit by the number of fluxes
+        #substract modified deficit from all fluxes 
+        
+        
+        
         y_wt.VAR[day+1,"land"]<<-land.INFO[,"y_cl"]
+        
+        
+        
       }else{
         y_wt.VAR[day+1,"land"]<<-y_wt.VAR[day,"land"]+dy_wt.VAR[day,"land"]
       }
