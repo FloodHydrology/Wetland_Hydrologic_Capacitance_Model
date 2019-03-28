@@ -15,26 +15,33 @@ library(Evapotranspiration)
 library(lubridate)  # dealing with dates
 library(tidyverse)  # for data wrangling
 
-WetID <- 26
-n.years <- 5
-giw.ID <- WetID
+WetID   <- 1
+n.years <- 20
+giw.ID  <- WetID
 
 # 2. Load Necessary Data ----------------------------------------------------------
-  # Run all of HUC12_Model_Input_PPR.R except dLe is assumed to be dL for now
-  # wetlands.shp$dLe <- wetlands.shp$dist2NearWet
+  # Run all of HUC12_Model_Input_PPR.R 
 
 # 3. Generate .INFO Files ---------------------------------------------------------
   # Run all of regional_analysis.R using WetID <- 26
   # Run until lumped.INFO is run
-  setwd("/nfs/WHC-data/Sandbox Model")
-  # save.image(file = 'PPR_ProcessedInputs_ID26_all.RData')
+  # setwd("/nfs/WHC-data/Sandbox Model")
+  # save.image(file = 'PPR_ProcessedInputs_ID26_all2.RData')
   # save(HUC12.shp, area, giw.INFO, land.INFO, lumped.INFO, pet.VAR, precip.VAR, volume,
-  #      file = 'PPR_ProcessedInputs_ID26_selected.RData')
+  #     file = 'PPR_ProcessedInputs_ID26_selected2.RData')
 
-load(file = 'PPR_ProcessedInputs_ID26_selected.RData')
-
+load(file = 'PPR_ProcessedInputs_ID26_selected2.RData')
+land.INFO[,'RD'] <- land.INFO[,'RD'] /4
+precip.VAR <- precip.VAR
+land.INFO[,"kb"]<-              0.046 /1000
+# land.INFO[,"y_c"]<-         -100
+# giw.INFO[,"y_c"]<-         -100
+land.INFO[,"y_cl"]<-         -1000
+# giw.INFO[,"y_cl"]<-         -500
+# land.INFO[,"GW_bf_0"] <- 0.01
 # 4. Source and Run WHC Model ----------------------------------------------------
-source("~/Wetland_Hydrologic_Capacitance_Model/R/WHC_Sandbox.R")
+# source("~/Wetland_Hydrologic_Capacitance_Model/R/WHC_Sandbox.R")
+source("~/Wetland_Hydrologic_Capacitance_Model/R/WHC_3c.R")
 
 output <- wetland.hydrology(giw.INFO,
                             land.INFO,
@@ -104,8 +111,14 @@ if(is.list(output)==T){
     tibble::tibble(precip     = sum(precip.VAR)/(length(precip.VAR)/365),
                    pet        = sum(pet.VAR)/(length(pet.VAR)/365),
                    et         = (sum(output$ET_lm.VAR[,1])+sum(output$ET_wt.VAR[,1]))/n.years,
+                   et_lm      = sum(output$ET_lm.VAR[,1])/n.years,
+                   et_wt      = sum(output$ET_wt.VAR[,1])/n.years,
                    sw_out     = sum(output$spill_vol.VAR[,2])/land.INFO[,"area"]/n.years,
-                   gw_out     = sum(-1*output$GW_bf.VAR[,1])/n.years) %>%
+                   gw_out     = sum(-1*output$GW_bf.VAR[,1])/n.years,
+                   closure    = sum(precip.VAR)/(length(precip.VAR)/365) -
+                                (sum(output$ET_lm.VAR[,1])+sum(output$ET_wt.VAR[,1]))/n.years -
+                                sum(output$spill_vol.VAR[,2])/land.INFO[,"area"]/n.years -
+                                sum(-1*output$GW_bf.VAR[,1])/n.years) %>%
     tidyr::gather(key="var") %>%
     dplyr::mutate(day=0)
   
@@ -141,9 +154,30 @@ if(is.list(output)==T){
   output2<-dplyr::bind_rows(output_wetland,output_catchment)
 }
 
-plot(output$y_w.VAR[,3]+620, cex = 0.3, ylim=c(-500, 800))
-lines(output$y_wt.VAR[,1], col = 'blue')
-legend(0, 0, legend=c("Wetland Stage (y_w)", "Upland Water Table (y_wt)"),
-       col=c("black", "blue"), lty=1:1, cex=0.8)
 
-plot(output$GW_local.VAR[,3])
+
+# plot(output$GW_local.VAR[,3])
+# plot(output$GW_bf.VAR[,1])
+
+# plot(output$R.VAR[,"land"]+output$loss_lm.VAR[,"land"]*(1-exp(-land.INFO[,"kb"])))
+# plot(output$y_wt.VAR[,"land"] - output$land.INFO[, "y_cl"])
+plot(output$R.VAR[(1):(1*365),'land'], type = "line")
+title('R')
+plot(output$loss_lm.VAR[1:(1*365),'land'], type = "line")
+title('loss_lm')
+plot(output$GW_bf.VAR[1:(1*365),'land'], type = "line")
+title('baseflow')
+plot(output$ET_wt.VAR[1:(1*365),'land'], type = "line")
+title('ET_wt')
+
+
+
+par(mar = c(8,3,3,3))
+plot(output$y_wt.VAR[(1):(1*365),'land'], col = 'blue', type='l')
+# lines(output$y_w.VAR[(3*365):(5*365),2], col = 'red')
+title('upland WT')
+legend(0, 0, legend=c("Wetland of Interest Stage (y_w)", "Upland Water Table (y_wt)", "Lumped Wetland"),
+       col=c("black", "blue", "red"), lty=1:1, cex=0.8, xpd = T)
+abline(h = land.INFO[,'y_c'])
+abline(h = land.INFO[,'y_cl'])
+
