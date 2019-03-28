@@ -120,20 +120,23 @@ climate_sim<-function(ncdc_file_path, lat_degrees, elevation){
   precip.VAR<-left_join(precip.VAR, t, "date")
   
   #c Estimate "snow" volume
-  precip.VAR$SWE<-ifelse(precip.VAR$temp<0, precip.VAR$precip,0)  # get SWE if below freezing
+  precip.VAR$SWE<-ifelse(precip.VAR$temp<0, precip.VAR$precip,0)    # get SWE if below freezing
   precip.VAR$precip<-ifelse(precip.VAR$temp<0, 0,precip.VAR$precip) # supress precip if below freezing
   
   #d account for melt
   dates<-precip.VAR$date
   precip.VAR$snowpack<-0
+  precip.VAR$snowmelt<-0
   precip.VAR<-data.matrix(precip.VAR)
   for(i in 2:nrow(precip.VAR)){
     #Add previous days snow pack
     precip.VAR[i,"snowpack"]<-precip.VAR[i-1,"snowpack"]+precip.VAR[i,"SWE"]
-    #Melt [1/4 of] snowpack if >3*C
-    if(precip.VAR[i,"temp"]>3){
-      precip.VAR[i,"precip"]<-precip.VAR[i,"precip"]+(precip.VAR[i,"snowpack"]/4)
-      precip.VAR[i,"snowpack"]<-precip.VAR[i,"snowpack"]*0.75
+    #Melt 
+    if(precip.VAR[i,"temp"]>0){
+      precip.VAR[i,"snowmelt"]<-ifelse(1.55*precip.VAR[i,"temp"]>precip.VAR[i,"snowpack"], 
+                                       precip.VAR[i,"snowpack"],
+                                       1.55*precip.VAR[i,"temp"]) 
+      precip.VAR[i,"snowpack"]<-precip.VAR[i,"snowpack"]-precip.VAR[i,"snowmelt"]
     }
   }
   precip.VAR<-data.frame(precip.VAR)
@@ -204,5 +207,5 @@ climate_sim<-function(ncdc_file_path, lat_degrees, elevation){
   pet.VAR<-rep(data[2:366,2],1000)
   
   #4 Output list~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  list(pet.VAR=pet.VAR, precip.VAR=precip.VAR$precip)
+  list(pet.VAR=pet.VAR, precip.VAR=precip.VAR$precip, snowmelt.VAR=precip.VAR$snowmelt)
 }
