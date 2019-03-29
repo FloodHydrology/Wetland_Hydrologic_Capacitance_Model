@@ -9,7 +9,7 @@
 # Step 1: Setup Workspace-----------------------------------------------------------
 ####################################################################################
 #Start Function
-wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VAR, n.years, area, volume, giw.ID){
+wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, snowmelt.VAR, precip.VAR, pet.VAR, n.years, area, volume, giw.ID){
   
   ####################################################################################
   # Step 2: Create stage-storage and stage-area relationships------------------------
@@ -293,7 +293,8 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
     
     
     #change in wetland storage (mm^3)
-    dV_w.VAR[day,"wetland"]<<-precip.VAR[day]*land.INFO[,"wetland_area"]-
+    dV_w.VAR[day,"wetland"]<<-precip.VAR[day]*land.INFO[,"wetland_area"]+
+      snowmelt.VAR[day]*land.INFO[,"area"]-
       pet.VAR[day]*As.VAR[day,"wetland"]+
       GW_local.VAR[day,"wetland"]+
       ((1-giw.INFO[,"vol_ratio"])*runoff_vol.VAR[day,"land"])

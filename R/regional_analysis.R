@@ -3,6 +3,7 @@ regional_analysis<-function(WetID,
                            n.years,
                            pet.VAR, 
                            precip.VAR, 
+                           snowmelt.VAR,
                            wetlands.shp, 
                            HUC12.shp, 
                            catchments.shp, 
@@ -169,7 +170,7 @@ temp_soils<-temp_soils@data
 temp_soils<-colSums(temp_soils[,c("y_c","y_cl","s_fc","s_w","n","clay","ksat")]*temp_soils[,"area"])/sum(temp_soils$area, na.rm=T)
 
 # 4.4 Rooting depth calculation
-RD<- cellStats(root_temp.grd, mean, na.rm=T)*1000
+RD<- cellStats(root_temp.grd, mean, na.rm=T)
 RD<- ifelse(RD<temp_soils["y_cl"], -1*RD, -1*temp_soils["y_cl"])
 
 # 4.5 Populate land.INFO matrix (lenghth units in mm)
@@ -218,6 +219,7 @@ execute<-function(n.years){
   output<-tryCatch(wetland.hydrology(giw.INFO,
                                      land.INFO,
                                      lumped.INFO,
+                                     snowmelt.VAR,
                                      precip.VAR,
                                      pet.VAR,
                                      n.years,
@@ -241,6 +243,10 @@ execute<-function(n.years){
       tibble::tibble(
              precip     = sum(precip.VAR)/(length(precip.VAR)/365),
              pet        = sum(pet.VAR,na.rm=T)/(length(pet.VAR)/365),
+             #for testing#############################
+             et_lm     = sum(output$ET_lm.VAR[,3],na.rm=T)/n.years,
+             et_wt     = sum(output$ET_wt.VAR[,3],na.rm=T)/n.years,
+             #for testing#############################
              et         = (sum(output$ET_lm.VAR[,3],na.rm=T)+sum(output$ET_wt.VAR[,3],na.rm=T))/n.years,
              #qf_in      = sum(output$runoff_vol.VAR[,3], na.rm=T)/giw.INFO["area_wetland"]/n.years,
              #qf_out     = sum(output$spill_vol.VAR[output$runoff_vol.VAR[,3]!=0,3], na.rm=T)/n.years/giw.INFO["area_wetland"],
@@ -292,6 +298,10 @@ execute<-function(n.years){
       tibble::tibble(precip     = sum(precip.VAR)/(length(precip.VAR)/365),
              pet        = sum(pet.VAR)/(length(pet.VAR)/365),
              et         = (sum(output$ET_lm.VAR[,1])+sum(output$ET_wt.VAR[,1]))/n.years,
+             #for testing#############################
+             et_lm     = sum(output$ET_lm.VAR[,1],na.rm=T)/n.years,
+             et_wt     = sum(output$ET_wt.VAR[,1],na.rm=T)/n.years,
+             #for testing#############################
              sw_out     = sum(output$spill_vol.VAR[,2])/land.INFO[,"area"]/n.years,
              gw_out     = sum(-1*output$GW_bf.VAR[,1])/n.years) %>%
       tidyr::gather(key="var") %>%

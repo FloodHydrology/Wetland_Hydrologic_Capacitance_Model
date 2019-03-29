@@ -135,4 +135,5 @@ climate<-climate_sim(ncdc_file_path = paste0(wd,"inputs/ncdc_Jamestown.csv"),
                      elevation      = 1400)
 pet.VAR<-climate$pet.VAR
 precip.VAR<-climate$precip.VAR
+snowmelt.VAR<-climate$snowmelt.VAR
 remove(climate)
