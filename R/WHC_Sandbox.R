@@ -246,8 +246,8 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
       r_ws  <- giw.INFO[wet.INFO, "dLe"] + r_w
       y_w   <- y_w.VAR[day, wet.VAR] + giw.INFO[wet.INFO, "dz"]
       GW_local.VAR[day,wet.VAR]<<- pi*giw.INFO[wet.INFO,"k_sat"] * 
-             ((y_wt.VAR[day, 1]- land.INFO[,"y_cl"])^2-(y_w- land.INFO[,"y_cl"])^2) / 
-              log(r_ws/r_w)
+        ((y_wt.VAR[day, 1]- land.INFO[,"y_cl"])^2-(y_w- land.INFO[,"y_cl"])^2) / 
+        log(r_ws/r_w)
     }
     
     #Adjust for differences in contribruting watershed area
@@ -258,7 +258,7 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
       ET_wt.VAR[day, wet.VAR]*giw.INFO[wet.INFO,"area_wetland"]+
       GW_local.VAR[day,wet.VAR]+
       runoff_vol.VAR[day,wet.VAR]+
-      spill_vol.VAR[day,1]*giw.INFO[wet.INFO,"vol_ratio"]
+      spill_vol.VAR[day,"wetland"]*giw.INFO[wet.INFO,"vol_ratio"]
     
     #Characterize the change in water level
     #Calculate the next days volume
@@ -287,8 +287,8 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
     
     #Calculate GW_local (mm^3, assume water flowing out of the wetland is +)
     GW_local_mat <- pi*land.INFO[,"k_sat"] * 
-            ((y_wt.VAR[day, "land"]- land.INFO[,"y_cl"])^2-(y_w.VAR[day, "wetland"]- land.INFO[,"y_cl"])^2) /
-            log((lumped.INFO[,'dLe'] + lumped.INFO[, 'r_w'])/lumped.INFO[,"r_w"])
+      ((y_wt.VAR[day, "land"]- land.INFO[,"y_cl"])^2-(y_w.VAR[day, "wetland"]- land.INFO[,"y_cl"])^2) /
+      log((lumped.INFO[,'dLe'] + lumped.INFO[, 'r_w'])/lumped.INFO[,"r_w"])
     GW_local.VAR[day, "wetland"] <<- sum(GW_local_mat)
     
     
@@ -374,7 +374,7 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
     s_lim.VAR[day+1,"land"]<<-ifelse(s_ex.VAR[day+1, "land"]>land.INFO[,"s_fc"],land.INFO[,"s_fc"], s_ex.VAR[day+1, "land"])
     
     #Estimate Change in Water Table Depth~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    #Local GW Flux (Assume water flowing out of the wetlands is positive)
+    #Local GW Flux (Assume water flowing out of the wetlands is positive) <- not anymore 
     GW_local.VAR[day,"land"]<<--1*GW_local.VAR[day,"wetland"]+GW_local.VAR[day,3]
     GW_local<-GW_local.VAR[day,"land"]/(land.INFO[,"area"]-sum(giw.INFO[,"area_wetland"]))
     
@@ -386,16 +386,18 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
     
     
     #Flux out of the watershed (e.g. baseflow from SWAT manual)
-    GW_bf.VAR[day,"land"]<<-ifelse(day==1,
-                                   land.INFO[,"GW_bf_0"],
-                                   ifelse(GW_bf.VAR[day-1,"land"]*exp(-land.INFO[,"kb"])+(R.VAR[day,"land"]+loss_lm.VAR[day,"land"]-ET_wt.VAR[day,"land"])*(1-exp(-land.INFO[,"kb"]))<0,
-                                          (GW_bf.VAR[day-1,"land"]*exp(-land.INFO[,"kb"])+(R.VAR[day,"land"]+loss_lm.VAR[day,"land"]-ET_wt.VAR[day,"land"])*(1-exp(-land.INFO[,"kb"]))),
-                                          0))
+    # GW_bf.VAR[day,"land"]<<-ifelse(day==1,
+    #                                land.INFO[,"GW_bf_0"],
+    #                                ifelse(GW_bf.VAR[day-1,"land"]*exp(-land.INFO[,"kb"])+(R.VAR[day,"land"]+loss_lm.VAR[day,"land"]-ET_wt.VAR[day,"land"])*(1-exp(-land.INFO[,"kb"]))<0,
+    #                                       (GW_bf.VAR[day-1,"land"]*exp(-land.INFO[,"kb"])+(R.VAR[day,"land"]+loss_lm.VAR[day,"land"]-ET_wt.VAR[day,"land"])*(1-exp(-land.INFO[,"kb"]))),
+    #                                       0))
+
+    GW_bf.VAR[day,"land"]<<- land.INFO[,"kb"] * (y_wt.VAR[day,"land"] - land.INFO[,"y_cl"])
     
     #Water Table Depth
     dy_wt.VAR[day,"land"]<<-(1/land.INFO[,"Sy"])*(R.VAR[day,"land"]+
                                                     loss_lm.VAR[day,"land"]-
-                                                    ET_wt.VAR[day,"land"]+
+                                                    ET_wt.VAR[day,"land"]-
                                                     GW_bf.VAR[day,"land"]-
                                                     GW_local) #change in water table elevation
     if((y_wt.VAR[day,"land"]+dy_wt.VAR[day,"land"])>0){

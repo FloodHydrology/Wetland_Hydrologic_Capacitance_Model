@@ -320,53 +320,41 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     # Characterize the vadose zone in the upland -----------------------------
     y_sat.VAR[day,"land"] <<- min(0, y_wt.VAR[day,"land"] + abs(land.INFO[,"psi"]))
-    psi_fc <-  land.INFO[,"psi"] * land.INFO[,"s_fc"]^(-land.INFO[,"b"])
+    # psi_fc <-  land.INFO[,"psi"] * land.INFO[,"s_fc"]^(-land.INFO[,"b"])
     
     # 6a. ET & Recharge Components ------------------------------------------
-    # Case 1: Deep water table (LMZ forms)
-    if(y_sat.VAR[day,"land"] < land.INFO[,"y_c"]){ # - 0.01 for weird edge case   
-      #6a.1 High moistue zone calculations
-      if(y_sat.VAR[day,"land"]<= (-5*abs(land.INFO[,"RD"]) + psi_fc - land.INFO[,"psi"])){ # condition 3 in eqn 26 in Laio
-        y_hm.VAR[day,"land"] <- y_sat.VAR[day,"land"] - psi_fc + land.INFO[,"psi"] 
+    # Water Table Components
+    
+    ET_wt.VAR[day,"land"] <<- pet.VAR[day]*exp(y_sat.VAR[day,"land"]/abs(land.INFO[,"RD"]))  
+    PET_lm   <- pet.VAR[day]-ET_wt.VAR[day,"land"]
+    
+    if (s_ex.VAR[day,"land"] >= land.INFO[,'s_fc']){
+      R.VAR[day,"land"]       <<- precip.VAR[day]
+      R_lm.VAR[day,"land"]    <<- 0
+      ET_lm.VAR[day,"land"]   <<- PET_lm 
+      ExfilSat <- pet.VAR[day]*(1-exp(y_sat.VAR[day,"land"]/abs(land.INFO[,"RD"])))
+      
+      # below are volumetric!!
+      loss_lm.VAR[day,"land"] <<- max(0, land.INFO[,"n"]*abs(y_sat.VAR[day,"land"]) *
+                                        (s_ex.VAR[day,"land"]-land.INFO[,"s_fc"]))
+    }else{ # LMZ below field capacity
+      R_lm.VAR[day,"land"]    <<- ifelse(precip.VAR[day]>=land.INFO[,"n"]*abs(y_sat.VAR[day,"land"])*(1-s_ex.VAR[day,"land"]),
+                                    land.INFO[,"n"]*abs(y_sat.VAR[day,"land"])*(1-s_ex.VAR[day,"land"]),
+                                    precip.VAR[day])
+      R.VAR[day,"land"]       <<- ifelse(precip.VAR[day]>=land.INFO[,"n"]*abs(y_sat.VAR[day,"land"])*(1-land.INFO[,"s_fc"]),
+                                         min(0,precip.VAR[day] - R_lm.VAR[day,"land"]) ,
+                                         0)
+        
+      
+      if ((s_ex.VAR[day,"land"]>land.INFO[,"s_wilt"])){
+        ET_lm.VAR[day,"land"] <<-PET_lm*(s_lim.VAR[day,"land"]-land.INFO[,"s_wilt"])/
+                                        (land.INFO[,"s_fc"]-land.INFO[,"s_wilt"])
       }else{
-        A <- (psi_fc-land.INFO[,"psi"]-land.INFO[,"y_c"])/
-          (psi_fc-land.INFO[,"psi"]-land.INFO[,"y_c"]-(5*abs(land.INFO[,"RD"])))
-        y_hm.VAR[day,"land"] <- (1-A^(3/4))*(y_sat.VAR[day,"land"]-land.INFO[,"y_c"])-
-          (A^2*(1-A^(-1/4)))/
-          (-land.INFO[,"y_c"]+psi_fc-land.INFO[,"psi"])*
-          (y_sat.VAR[day,"land"]-land.INFO[,"y_c"])^2
+        ET_lm.VAR[day,"land"]<<-0
       }
-      
-      ET_wt.VAR[day,"land"]<<- pet.VAR[day]*exp(y_sat.VAR[day,"land"]/abs(land.INFO[,"RD"]))
-      R.VAR[day,"land"]    <<- 0
-      
-      if (y_hm.VAR[day,"land"] < -0.01) {
-        #6a.2 Upland LMZ dynamics ---------------------------------------------
-        lmz_stor <- max(0, land.INFO[,"n"]*abs(y_hm.VAR[day,"land"])*(1- s_ex.VAR[day, "land"] ))
-        PET_lm   <- pet.VAR[day]-ET_wt.VAR[day,"land"]
-        
-        if(s_ex.VAR[day,"land"]>land.INFO[,"s_fc"]){
-          ET_lm.VAR[day,"land"]<<-PET_lm
-        }else if(s_ex.VAR[day,"land"]>land.INFO[,"s_wilt"]){
-          ET_lm.VAR[day,"land"]<<-PET_lm*(s_lim.VAR[day,"land"]-land.INFO[,"s_wilt"])/(land.INFO[,"s_fc"]-land.INFO[,"s_wilt"])
-        }else{
-          ET_lm.VAR[day,"land"]<<-0
-        }
-        
-        R_lm.VAR[day,"land"]<<-ifelse(precip.VAR[day]>land.INFO[,"n"]*abs(y_hm.VAR[day,"land"])*(1-land.INFO[,"s_fc"]),
-                                      land.INFO[,"n"]*abs(y_hm.VAR[day,"land"])*(1-land.INFO[,"s_fc"]),
-                                      precip.VAR[day])
-        loss_lm.VAR[day,"land"] <<-max(0, land.INFO[,"n"]*abs(y_hm.VAR[day,"land"]) *
-                                         (s_ex.VAR[day,"land"]-land.INFO[,"s_fc"]))
-        ExfilSat <- pet.VAR[day] * (exp(y_hm.VAR[day,"land"] / abs(land.INFO[,"RD"])) -
-                                      y_sat.VAR[day,"land"] / abs(land.INFO[,"RD"]))
-      } else{
-        y_hm.VAR[day,"land"]  <<- 0
-        ET_wt.VAR[day,"land"]<<- pet.VAR[day]*exp(y_sat.VAR[day,"land"]/abs(land.INFO[,"RD"]))
-        PET_lm   <- 0
-        ExfilSat <- 0*pet.VAR[day]*(1-exp(y_sat.VAR[day,"land"]/abs(land.INFO[,"RD"])))
-        R.VAR[day,"land"]     <<- precip.VAR[day]
-      }
+      ExfilSat <- 0
+    }
+    
       
       # Special Case: no water left
       if (y_wt.VAR[day,"land"] <= land.INFO[, 'y_cl']){
@@ -375,22 +363,13 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
         ExfilSat <- 0;  
       }    
       
-    }else{ # Case 2: Shallow water table (only saturated zone)
-      y_hm.VAR[day,"land"]  <<- 0
-      ET_wt.VAR[day,"land"] <<- pet.VAR[day]*exp(y_sat.VAR[day,"land"]/abs(land.INFO[,"RD"]))
-      PET_lm   <- 0
-      ExfilSat <- pet.VAR[day]*(1-exp(y_sat.VAR[day,"land"]/abs(land.INFO[,"RD"])))
-      R.VAR[day,"land"]     <<- precip.VAR[day]
-      
-    } # End of 6a
-    
-    
+    # ET_lm.VAR[day,"land"]<<-0
     #Calculate Change in Soil Moisture~~~~~~~~~~~~~~~~~~~~~~~~~
     #Calculate soil moisture
-    ds.VAR[day,"land"]<<-ifelse(abs(y_hm.VAR[day,"land"])>0,
-                                (R_lm.VAR[day,"land"]-ET_lm.VAR[day,"land"]-loss_lm.VAR[day,"land"])/abs(y_hm.VAR[day,"land"]),
+    ds.VAR[day,"land"]<<-ifelse(abs(y_sat.VAR[day,"land"])>0,
+                                (R_lm.VAR[day,"land"]-ET_lm.VAR[day,"land"]-loss_lm.VAR[day,"land"])/abs(y_sat.VAR[day,"land"]),
                                 0)
-    s_ex.VAR[day+1, "land"]<<-min(s_ex.VAR[day,"land"]+ds.VAR[day,"land"], land.INFO[,'s_fc'])
+    s_ex.VAR[day+1, "land"]<<-s_ex.VAR[day,"land"]+ds.VAR[day,"land"]
     s_lim.VAR[day+1,"land"]<<-ifelse(s_ex.VAR[day+1, "land"]>land.INFO[,"s_fc"],land.INFO[,"s_fc"], s_ex.VAR[day+1, "land"])
     
     #Estimate Change in Water Table Depth~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -399,11 +378,7 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
     GW_local<-GW_local.VAR[day,"land"]/(land.INFO[,"area"]-sum(giw.INFO[,"area_wetland"]))
     
     #Recharge
-    vadose_storage<- land.INFO[,"n"]*abs(y_hm.VAR[day,"land"])*(land.INFO[,"s_fc"]-s_lim.VAR[day,"land"])
-    # R.VAR[day,"land"]<<-ifelse(precip.VAR[day]>vadose_storage,
-    #                            precip.VAR[day]-vadose_storage,
-    #                            0)
-    
+    vadose_storage<- land.INFO[,"n"]*abs(y_sat.VAR[day,"land"])*(land.INFO[,"s_fc"]-s_lim.VAR[day,"land"])
     
     #Flux out of the watershed (e.g. baseflow from SWAT manual)
     # GW_bf.VAR[day,"land"]<<-ifelse(day==1,
@@ -418,9 +393,9 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, precip.VAR, pet.VA
     dy_wt.VAR[day,"land"]<<-(1/land.INFO[,"Sy"])*(R.VAR[day,"land"]+
                                                     loss_lm.VAR[day,"land"]-
                                                     ET_wt.VAR[day,"land"]-
-                                                    GW_bf.VAR[day,"land"]-
-                                                    ExfilSat - 
-                                                    0*GW_local) #change in water table elevation
+                                                    0*GW_bf.VAR[day,"land"]-
+                                                    0*ExfilSat - 
+                                                    GW_local) #change in water table elevation
     
     if((y_wt.VAR[day,"land"]+dy_wt.VAR[day,"land"])>0){
       runoff_vol.VAR[day+1,"land"]<<-((y_wt.VAR[day,"land"]+dy_wt.VAR[day,"land"]))*(land.INFO[,"area"]-land.INFO[,"wetland_area"])
