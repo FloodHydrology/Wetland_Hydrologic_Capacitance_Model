@@ -66,7 +66,7 @@ for(i in 1:length(wetlands_temp.shp)){
   
   #create functions to calculate area and volume
   area.fun<-function(h){pi*((rmax*((h/hmax)^.25))^2)}
-  volume.fun<-function(h){0.25*((area.fun(h)/10000)^1.4742)*10000}
+  volume.fun<-function(h){(0.01725*(area.fun(h)^1.30086))}
   
   #Apply functions
   n.col   <- which(wetlands_temp.shp$WetID==TempID)
