@@ -135,6 +135,7 @@ climate<-climate_sim(ncdc_file_path = paste0(wd,"inputs/ncdc_alt.csv"),
                      elevation      = 10)
 pet.VAR<-climate$pet.VAR
 precip.VAR<-climate$precip.VAR
+snowmelt.VAR<-climate$snowmelt.VAR
 remove(climate)
 
 #Old stuff--------------------------------------------------------------------------

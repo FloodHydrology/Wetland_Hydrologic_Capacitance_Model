@@ -59,12 +59,12 @@ remove(list=ls()[ls()!= 'backup_dir' & ls()!= 'results_dir' & ls()!= 'regional_a
 #3.1 Define global simulation options-----------------------------------------------
 cluster_name<-"sesync"
 time_limit<-"12:00:00"
-n.years<-1000
+n.years<-100
 n.nodes<-12
 n.cpus<-8
 
 #define functions from file 
-source("R/WHC_3.R")
+source("R/WHC_3e.R")
 source("R/regional_analysis.R")
 
 #3.2 Delmarva----------------------------------------------------------------------
