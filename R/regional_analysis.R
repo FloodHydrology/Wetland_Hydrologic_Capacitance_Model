@@ -61,8 +61,8 @@ for(i in 1:length(wetlands_temp.shp)){
   #Define Vmax (Using Wu and Lane 2016)
   Vmax<-(0.01725*(Amax^1.30086)) #m3
   
-  #Estimate hmax using Hayashi and Kamp 2000
-  hmax<-Vmax*2/Amax
+  #Estimate hmax using Hayashi and Kamp 2000  (Assumes shape value of ~2 )
+  hmax<-Vmax*3/Amax
   
   #create functions to calculate area and volume
   area.fun<-function(h){pi*((rmax*((h/hmax)^.25))^2)}
