@@ -14,7 +14,7 @@
 wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, snowmelt.VAR, precip.VAR, pet.VAR, n.years, area, volume, giw.ID){
   
   # Need to touch up later!!!
-  s_star <- (land.INFO[, 's_fc'] - land.INFO[, 's_wilt'] ) * 0.673 + land.INFO[, 's_wilt']  # very rough estimation
+  s_star <- (land.INFO[, 's_fc'] - land.INFO[, 's_wilt'] ) * 0.673 + land.INFO[, 's_wilt']  # very rough estimation; interpolated relationship from data in paper
   psi_fc <- land.INFO[,"psi"]*land.INFO[,"s_fc"]^(-4.05) #see eq. 26 in Laio 2011
   
   ####################################################################################
@@ -295,19 +295,13 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, snowmelt.VAR, prec
     #Estimate wetland surface area
     As.VAR[day,"wetland"]<<-stage2area.fun(y_w.VAR[day,"wetland"])
     
-    # print(day)
-    # print(y_sat.VAR[day, "land"])
-    # print(y_w.VAR[day, "wetland"])
-
     #Calculate GW_local (mm^3, assume water flowing out of the wetland is +)
     GW_local_mat <- pi*land.INFO[,"k_sat"] * 
       ((y_sat.VAR[day, "land"]- land.INFO[,"y_cl"])^2-(y_w.VAR[day, "wetland"]- land.INFO[,"y_cl"])^2) /
       log((lumped.INFO[,'dLe'] + lumped.INFO[, 'r_w'])/lumped.INFO[,"r_w"])
     GW_local.VAR[day, "wetland"] <<- sum(GW_local_mat) 
     
-    # GW_local.VAR[day, "wetland"] <<- 0 # FOR DEBUGGING !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!qet @$^yt#y gher h@$#y
-    
-    #change in wetland storage (mm^3)
+     #change in wetland storage (mm^3)
     dV_w.VAR[day,"wetland"]<<-precip.VAR[day]  * land.INFO[,"wetland_area"]+
                               snowmelt.VAR[day]* land.INFO[,"area"]-
                               pet.VAR[day]     * As.VAR[day,"wetland"]+
@@ -432,18 +426,7 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, snowmelt.VAR, prec
     
     y_wt.VAR[day+1,"land"] <<- y_sat.VAR[day+1,"land"] + land.INFO[,"psi"]
     
-    
-    # print(day)
-    # print(y_sat.VAR[day+1,"land"])
-    # print(R.VAR[day,"land"])
-    # print(loss_lm.VAR[day,"land"])
-    # print(exfil.VAR[day,"land"])
-    # print(ET_wt.VAR[day,"land"])
-    # print(GW_bf.VAR[day,"land"])
-    # print(GW_local)
-    # 
-    
-    if(y_sat.VAR[day+1,"land"] > 0){ # runoff calculations
+    sif(y_sat.VAR[day+1,"land"] > 0){ # runoff calculations
       runoff_vol.VAR[day+1,"land"] <<- y_sat.VAR[day+1,"land"] *(land.INFO[,"area"]-land.INFO[,"wetland_area"]) * land.INFO[,"Sy"]
       y_sat.VAR[day+1,"land"]      <<- 0
       
