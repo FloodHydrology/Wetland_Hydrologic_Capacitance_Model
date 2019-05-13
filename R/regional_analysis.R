@@ -49,24 +49,24 @@ volume   <- matrix(0, ncol=length(wetlands_temp.shp), nrow=100)
 
 # 2.2 Use loop to calculate based on previously published relationships
 for(i in 1:length(wetlands_temp.shp)){
+  #Define shape factor (for now hard code, maybe make it a var later)
+  p<-2
+  
   #Define TempID
   TempID<-wetlands_temp.shp$WetID[i]
   
   #Define Amax
   Amax<-wetlands_temp.shp$area_m2[wetlands_temp.shp$WetID==TempID]
   
-  #Define rmax
-  rmax<-(Amax/pi)^.5
-  
   #Define Vmax (Using Wu and Lane 2016)
   Vmax<-(0.01725*(Amax^1.30086)) #m3
   
-  #Estimate hmax using Hayashi and Kamp 2000  (Assumes shape value of ~2 )
-  hmax<-Vmax*3/Amax
+  #Estimate hmax using Hayashi and Kamp 2000  
+  hmax<-Vmax*(1+(2/p))/Amax
   
   #create functions to calculate area and volume
-  area.fun<-function(h){pi*((rmax*((h/hmax)^.25))^2)}
-  volume.fun<-function(h){(0.01725*(area.fun(h)^1.30086))}
+  area.fun<-function(h){Amax*(h/hmax)^(2/p)}
+  volume.fun<-function(h){Amax*(h^(1+2/p))/(1+2/p)/(hmax^(2/p))}
   
   #Apply functions
   n.col   <- which(wetlands_temp.shp$WetID==TempID)
