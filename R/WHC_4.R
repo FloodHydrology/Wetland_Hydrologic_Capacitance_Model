@@ -370,8 +370,7 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, snowmelt.VAR, prec
       beta <- 2*land.INFO[,"b"]+4
       
       if (s_ex.VAR[day,"land"] >= land.INFO[,"s_fc"]){
-        loss_lm.VAR[day,"land"] <<- land.INFO[,"k_sat"] / (exp(beta*(1-land.INFO[,"s_fc"])) - 1) *
-                                                          (exp(beta*(s_ex.VAR[day,"land"]-land.INFO[,"s_fc"])) - 1) 
+        loss_lm.VAR[day,"land"] <<- land.INFO[,"n"]*(s_ex.VAR[day,"land"]-s_lim.VAR[day,"land"])*abs(y_hm.VAR[day,"land"])
       } else {
         loss_lm.VAR[day,"land"] <<- 0
       }
@@ -426,7 +425,7 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, snowmelt.VAR, prec
     
     y_wt.VAR[day+1,"land"] <<- y_sat.VAR[day+1,"land"] + land.INFO[,"psi"]
     
-    sif(y_sat.VAR[day+1,"land"] > 0){ # runoff calculations
+    if(y_sat.VAR[day+1,"land"] > 0){ # runoff calculations
       runoff_vol.VAR[day+1,"land"] <<- y_sat.VAR[day+1,"land"] *(land.INFO[,"area"]-land.INFO[,"wetland_area"]) * land.INFO[,"Sy"]
       y_sat.VAR[day+1,"land"]      <<- 0
       
