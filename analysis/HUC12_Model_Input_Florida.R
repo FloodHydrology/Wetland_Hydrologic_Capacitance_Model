@@ -126,6 +126,28 @@ dz<-dz[!duplicated(dz[,1]),]
 wetlands.shp<-merge(wetlands.shp, dz, by="WetID")
 remove(dz)
 
+#3.7 Remove catchments with only one wetland
+#Create function to count wetlands in each catchment
+fun<-function(n){
+  #Identify catchment of interest
+  catchment.shp<-catchments.shp[n,]
+  
+  #clip wetlands
+  giw.shp<-wetlands.shp[catchment.shp,]
+  
+  #Export count
+  tibble(FEATUREID = catchment.shp$FEATUREID, n.wetlands = length(giw.shp))
+}
+
+#Execute function and merge with catchments
+count<-lapply(seq(1, length(catchments.shp)), fun) %>% bind_rows()
+catchments.shp<-merge(catchments.shp,count, by = 'FEATUREID')
+
+#Remove wetlands in catchments with less than 2 wetlands
+catchments.shp<-catchments.shp[catchments.shp$n.wetlands>1,]
+wetlands.shp<-wetlands.shp[catchments.shp,]
+
+
 ####################################################################################
 # Step 4: Climate data--------------------------------------------------------------
 ####################################################################################
