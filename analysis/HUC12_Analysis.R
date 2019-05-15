@@ -59,12 +59,12 @@ remove(list=ls()[ls()!= 'backup_dir' & ls()!= 'results_dir' & ls()!= 'regional_a
 #3.1 Define global simulation options-----------------------------------------------
 cluster_name<-"sesync"
 time_limit<-"12:00:00"
-n.years<-100
-n.nodes<-12
+n.years<-10
+n.nodes<-4
 n.cpus<-8
 
 #define functions from file 
-source("R/WHC_3e.R")
+source("R/WHC_4.R")
 source("R/regional_analysis.R")
 
 #3.2 Delmarva----------------------------------------------------------------------
@@ -74,9 +74,20 @@ load(paste0(backup_dir,"Delmarva_Input.RData"))
 #b Create wrapper function 
 dmv_fun<-function(ID){
   print(paste0("WetID=",ID)) 
-  regional_analysis(WetID=ID,n.years, pet.VAR,precip.VAR,wetlands.shp,HUC12.shp, 
-                     catchments.shp, flowlines.shp,fac.grd, soils.shp, dem.grd, 
-                     nfw_centroid.shp, rootdepth.grd)
+  regional_analysis(WetID=ID,
+                    n.years, 
+                    pet.VAR,
+                    precip.VAR,
+                    snowmelt.VAR, 
+                    wetlands.shp,
+                    HUC12.shp, 
+                    catchments.shp, 
+                    flowlines.shp,
+                    fac.grd, 
+                    soils.shp, 
+                    dem.grd, 
+                    nfw_centroid.shp, 
+                    rootdepth.grd)
 }
 
 #c run using SLURM 
@@ -91,7 +102,7 @@ delmarva<- slurm_apply(dmv_fun,
                          "fac.grd","catchments.shp","flowlines.shp","HUC12.shp",
                          "soils.shp","wetlands.shp","dem.grd", "rootdepth.grd", 'n.years',
                          #Climate data
-                         "precip.VAR", "pet.VAR"),
+                         "precip.VAR", "pet.VAR","snowmelt.VAR"),
                        nodes = n.nodes, cpus_per_node=n.cpus,
                        pkgs=c('sp','raster','rgdal','rgeos','dplyr', 'tidyr', 'tibble'),
                        slurm_options = sopts)
@@ -116,7 +127,7 @@ load(paste0(backup_dir,"PPR_Input.RData"))
 #c Create wrapper function 
 ppr_fun<-function(ID){
   print(paste0("WetID=",ID))
-  regional_analysis(WetID=ID,n.years, pet.VAR,precip.VAR,wetlands.shp,HUC12.shp, 
+  regional_analysis(WetID=ID,n.years, pet.VAR,precip.VAR,snowmelt.VAR,wetlands.shp,HUC12.shp, 
                     catchments.shp, flowlines.shp,fac.grd, soils.shp, dem.grd, 
                     nfw_centroid.shp, rootdepth.grd)}
 
@@ -132,7 +143,7 @@ ppr    <- slurm_apply(ppr_fun,
                          "fac.grd","catchments.shp","flowlines.shp","HUC12.shp",
                          "soils.shp","wetlands.shp","dem.grd", "rootdepth.grd", 'n.years',
                          #Climate data
-                         "precip.VAR", "pet.VAR"),
+                         "precip.VAR", "pet.VAR","snowmelt.VAR"),
                       nodes = n.nodes, cpus_per_node=n.cpus,
                       pkgs=c('sp','raster','rgdal','rgeos','dplyr', 'tidyr', 'tibble'),
                       slurm_options = sopts)
@@ -157,7 +168,7 @@ load(paste0(backup_dir,"Florida_Input.RData"))
 #c Create wrapper function 
 florida_fun<-function(ID){
   print(paste0("WetID=",ID))
-  regional_analysis(WetID=ID,n.years, pet.VAR,precip.VAR,wetlands.shp,HUC12.shp, 
+  regional_analysis(WetID=ID,n.years, pet.VAR,precip.VAR,snowmelt.VAR,wetlands.shp,HUC12.shp, 
                     catchments.shp, flowlines.shp,fac.grd, soils.shp, dem.grd, 
                     nfw_centroid.shp, rootdepth.grd)}
 
@@ -173,7 +184,7 @@ florida <- slurm_apply(florida_fun,
                         "fac.grd","catchments.shp","flowlines.shp","HUC12.shp",
                         "soils.shp","wetlands.shp","dem.grd", "rootdepth.grd", 'n.years',
                         #Climate data
-                        "precip.VAR", "pet.VAR"),
+                        "precip.VAR", "pet.VAR","snowmelt.VAR"),
                        nodes = n.nodes, cpus_per_node=n.cpus,
                        pkgs=c('sp','raster','rgdal','rgeos','dplyr', 'tidyr', 'tibble'),
                        slurm_options = sopts)
@@ -197,9 +208,9 @@ write.csv(results_ppr,       paste0(results_dir,"ppr.csv"))
 write.csv(results_florida,   paste0(results_dir,"florida.csv"))
 
 #clean up file
-# cleanup_files(delmarva)
-# cleanup_files(ppr)
-# cleanup_files(florida)
+cleanup_files(delmarva)
+cleanup_files(ppr)
+cleanup_files(florida)
 
 #Save output
 save.image(paste0(backup_dir,"output.RData"))
