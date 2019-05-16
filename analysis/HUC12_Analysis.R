@@ -38,20 +38,20 @@ results_dir<-"/nfs/WHC-data/Figure Generation/"
 ####################################################################################
 # Step 2:Input data for regional analysis-------------------------------------------
 ####################################################################################
-#2.1 Delmarva
-source("analysis/HUC12_Model_Input_Delmarva.R")
-save.image(paste0(backup_dir,"Delmarva_Input.RData"))
-remove(list=ls()[ls()!= 'backup_dir' & ls()!= 'results_dir' & ls()!= 'regional_analysis'])
-
-#2.2 ppr
-source("analysis/HUC12_Model_Input_PPR.R")
-save.image(paste0(backup_dir,"PPR_Input.RData"))
-remove(list=ls()[ls()!= 'backup_dir' & ls()!= 'results_dir' & ls()!= 'regional_analysis'])
-
-#2.3 Florida
-source("analysis/HUC12_Model_Input_Florida.R")
-save.image(paste0(backup_dir,"Florida_Input.RData"))
-remove(list=ls()[ls()!= 'backup_dir' & ls()!= 'results_dir' & ls()!= 'regional_analysis'])
+# #2.1 Delmarva
+# source("analysis/HUC12_Model_Input_Delmarva.R")
+# save.image(paste0(backup_dir,"Delmarva_Input.RData"))
+# remove(list=ls()[ls()!= 'backup_dir' & ls()!= 'results_dir' & ls()!= 'regional_analysis'])
+# 
+# #2.2 ppr
+# source("analysis/HUC12_Model_Input_PPR.R")
+# save.image(paste0(backup_dir,"PPR_Input.RData"))
+# remove(list=ls()[ls()!= 'backup_dir' & ls()!= 'results_dir' & ls()!= 'regional_analysis'])
+# 
+# #2.3 Florida
+# source("analysis/HUC12_Model_Input_Florida.R")
+# save.image(paste0(backup_dir,"Florida_Input.RData"))
+# remove(list=ls()[ls()!= 'backup_dir' & ls()!= 'results_dir' & ls()!= 'regional_analysis'])
 
 ####################################################################################
 # Step 3: Regional simulations------------------------------------------------------
@@ -59,8 +59,8 @@ remove(list=ls()[ls()!= 'backup_dir' & ls()!= 'results_dir' & ls()!= 'regional_a
 #3.1 Define global simulation options-----------------------------------------------
 cluster_name<-"sesync"
 time_limit<-"12:00:00"
-n.years<-10
-n.nodes<-4
+n.years<-100
+n.nodes<-16
 n.cpus<-8
 
 #define functions from file 
