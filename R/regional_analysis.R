@@ -215,6 +215,7 @@ giw.ID<-giw.INFO[,"giw.ID"][giw.INFO[,"WetID"]==main_wetland]
 
 # 6.2 Create function to execute WHC and organize output terms
 execute<-function(n.years){
+  
   # a. Run WHC Model w/ tryCatch
   output<-tryCatch(wetland.hydrology(giw.INFO,
                                      land.INFO,
@@ -229,19 +230,19 @@ execute<-function(n.years){
                    error = function(e) tibble::tibble(var = "error",
                                               value = -9999,
                                               day = 0,
-                                              HUC12=HUC12.shp$HUC_12, 
-                                              WetID = WetID, 
+                                              HUC12=HUC12.shp$HUC_12,
+                                              WetID = WetID,
                                               scale = "wetland"))
-  
+
   # b. Organize output
   if(is.list(output)==T){
     giw.INFO<-giw.INFO[giw.INFO[,"giw.ID"]==giw.ID,]
-    
+
     #i Wetland Scale Estimates
     #Calculate wetland scale annual water balance
     wetland_balance<-
       tibble::tibble(
-             precip     = sum(precip.VAR)/(length(precip.VAR)/365),
+             precip     = sum(precip.VAR+snowmelt.VAR)/(length(precip.VAR)/365),
              pet        = sum(pet.VAR,na.rm=T)/(length(pet.VAR)/365),
              #for testing#############################
              et_lm     = sum(output$ET_lm.VAR[,3],na.rm=T)/n.years,
@@ -256,46 +257,45 @@ execute<-function(n.years){
              gw_in      = sum(output$GW_local.VAR[,3][output$GW_local.VAR[,3]>0], na.rm=T)/giw.INFO["area_wetland"]/n.years) %>%
       tidyr::gather(key="var") %>%
       dplyr::mutate(day=0)
-    
+
     #Calculate mean annual duration of fluxes
     wetland_duration<-
       tibble::tibble(rain_day   = length(precip.VAR[precip.VAR!=0])/(length(precip.VAR)/365),
              gw_in_day  = length(output$GW_local.VAR[output$GW_local.VAR[,3]>0,3])/n.years,
              gw_out_day = length(output$GW_local.VAR[output$GW_local.VAR[,3]<0,3])/n.years,
              qf_in_day  = length(output$runoff_vol.VAR[output$runoff_vol.VAR[,3]>0,3])/n.years,
-             qf_out_day = length(output$spill_vol.VAR[output$runoff_vol.VAR[,3]!=0 & 
+             qf_out_day = length(output$spill_vol.VAR[output$runoff_vol.VAR[,3]!=0 &
                                                         output$spill_vol.VAR[,3]!=0,3])/n.years,
-             sw_out_day = length(output$spill_vol.VAR[output$runoff_vol.VAR[,3]==0 & 
+             sw_out_day = length(output$spill_vol.VAR[output$runoff_vol.VAR[,3]==0 &
                                                         output$spill_vol.VAR[,3]!=0,3])/n.years) %>%
       tidyr::gather(key="var") %>%
       dplyr::mutate(day=0)
-    
+
     #Calculate mean daily fluxes at wetland scale
     wetland_fluxes<-
-      tibble::tibble(
-        day       = c(rep(seq(1,365),n.years),1), 
-        y_w       = output$y_w.VAR[,3], 
-        gw_local  = output$GW_local.VAR[,3]/giw.INFO["area_wetland"], 
-        spill_out = output$spill_vol.VAR[,3]/giw.INFO["area_wetland"], 
+      tibble::tibble(day = c(rep(seq(1,365),n.years),1),
+        y_w       = output$y_w.VAR[,3],
+        gw_local  = output$GW_local.VAR[,3]/giw.INFO["area_wetland"],
+        spill_out = output$spill_vol.VAR[,3]/giw.INFO["area_wetland"],
         runoff_in = output$runoff_vol.VAR[,3]/giw.INFO["area_wetland"]) %>%
-      dplyr::mutate(y_w = y_w + abs(giw.INFO["invert"]), 
+      dplyr::mutate(y_w = y_w + abs(giw.INFO["invert"]),
                     y_w = dplyr::if_else(y_w>0,
                                          y_w/abs(giw.INFO["invert"]),
                                          y_w/abs(giw.INFO["y_cl"]))) %>%
       dplyr::group_by(day) %>%
       dplyr::summarise_all(., mean) %>%
       tidyr::gather(var,value,-day)
-    
+
     #Create wetland output
     output_wetland<-dplyr::bind_rows(wetland_balance, wetland_duration, wetland_fluxes) %>%
       dplyr::mutate(HUC12 = HUC12.shp$HUC12,
-                    WetID = WetID, 
+                    WetID = WetID,
                     scale = "wetland")
-    
+
     #ii. Catchement scale estimates
     #Calcluate catchment scale annual water balance
     catchment_balance<-
-      tibble::tibble(precip     = sum(precip.VAR)/(length(precip.VAR)/365),
+      tibble::tibble(precip     = sum(precip.VAR+snowmelt.VAR)/(length(precip.VAR)/365),
              pet        = sum(pet.VAR)/(length(pet.VAR)/365),
              et         = (sum(output$ET_lm.VAR[,1])+sum(output$ET_wt.VAR[,1]))/n.years,
              #for testing#############################
@@ -306,7 +306,7 @@ execute<-function(n.years){
              gw_out     = sum(-1*output$GW_bf.VAR[,1])/n.years) %>%
       tidyr::gather(key="var") %>%
       dplyr::mutate(day=0)
-    
+
     #Calculate mean annual duration of catchment fluxes
     catchment_duration<-
       tibble::tibble(rain_day   = length(precip.VAR[precip.VAR!=0])/(length(precip.VAR)/365),
@@ -314,31 +314,31 @@ execute<-function(n.years){
              gw_out_day = length(output$GW_bf.VAR[output$GW_bf.VAR[,1]<0,1])/n.years) %>%
       tidyr::gather(key="var") %>%
       dplyr::mutate(day=0)
-    
+
     #Calculate mean daily fluxes at catchment scale
     catchment_fluxes<-
       tibble::tibble(
-        day       = c(rep(seq(1,365),n.years),1), 
-        y_w       = output$y_w.VAR[,2], 
+        day       = c(rep(seq(1,365),n.years),1),
+        y_w       = output$y_w.VAR[,2],
         y_wt      = output$y_wt.VAR[,1],
-        bf_out    = output$GW_bf.VAR[,1]/land.INFO[,"area"], 
+        bf_out    = output$GW_bf.VAR[,1]/land.INFO[,"area"],
         spill_out = output$spill_vol.VAR[,2]/land.INFO[,"area"]) %>%
-      dplyr::mutate(y_wt = y_wt/abs(land.INFO[,"y_cl"]), 
+      dplyr::mutate(y_wt = y_wt/abs(land.INFO[,"y_cl"]),
              y_w =  y_w/abs(land.INFO[,"wetland_invert"])) %>%
       dplyr::group_by(day) %>%
       dplyr::summarise_all(., mean) %>%
       tidyr::gather(var,value,-day)
-    
+
     #Create catchment output
     output_catchment<-dplyr::bind_rows(catchment_balance, catchment_duration, catchment_fluxes) %>%
       dplyr::mutate(HUC12 = HUC12.shp$HUC12,
-                    WetID = WetID, 
+                    WetID = WetID,
                     scale = "catchment")
-    
+
     #Combine output in long form
     output<-dplyr::bind_rows(output_wetland,output_catchment)
   }
-  
+
   #Export output
   output
 }

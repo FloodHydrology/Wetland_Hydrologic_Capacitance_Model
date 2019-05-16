@@ -75,4 +75,51 @@ boxplots<-df %>%
   
 
 #Plot and save~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-output<-grid.arrange(waterLevel,boxplots,nrow=1)
+output<-grid.arrange(waterLevel,boxplots,nrow=1, top = "Wetland Scale")
+ggsave(paste0(results_dir, "Output/wetland_scale.png"), 
+       device = "png",width = 7, height=8, units="in")
+
+
+#4.Catchment Scale Plot-------------------------------------------------------------------------------
+#Catchment water level~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+waterLevel<-df %>% 
+  filter(var=='y_wt', scale=='catchment') %>%
+  group_by(day, scale, landscape) %>%
+  summarise(med=median(value, na.rm=T), 
+            upr = quantile(value, 0.75, na.rm=T), 
+            lwr = quantile(value, 0.25, na.rm=T)) %>%
+  ggplot(aes(x=day, y=med)) +
+  geom_ribbon(aes(ymin=lwr, ymax=upr), bg="grey70") +
+  geom_line(lty=2) + 
+  facet_grid(rows=vars(landscape), 
+             scales='fixed') +
+  theme_bw() +
+  ylab("Median Water Tabel Elevation [m/m]") +
+  xlab(NULL)
+
+#Wetland water balance~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+boxplots<-df %>% 
+  #Select Relevant Data
+  dplyr::filter(var %in% c("precip","et","sw_out","gw_out"), 
+                scale=='catchment')  %>%
+  dplyr::select(WetID, var, value, landscape) %>%
+  #Normalize to precip
+  tidyr::spread(var,value) %>%
+  dplyr::mutate(
+    et     = et/precip,
+    sw_out = sw_out/precip,
+    gw_out = gw_out/precip) %>%
+  dplyr::select(-precip) %>%
+  tidyr::gather(var,val, -c(WetID,landscape)) %>%
+  #plot 
+  ggplot(aes(var,val)) +
+    facet_grid(rows=vars(landscape)) +
+    geom_boxplot(outlier.shape = NA) +
+    theme_bw() + 
+      ylim(0,0.5) + ylab("Proportion of Precip [mm/mm]") + xlab(NULL)
+
+
+#Plot and save~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+grid.arrange(waterLevel,boxplots,nrow=1, top="Catchment Scale")
+ggsave(paste0(results_dir, "Output/wetland_scale.png"), 
+       device = "png",width = 7, height=8, units="in")
