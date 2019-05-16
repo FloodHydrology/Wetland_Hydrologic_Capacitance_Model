@@ -128,6 +128,7 @@ remove(dz)
 
 #3.7 Remove catchments with only one wetland
 #Create function to count wetlands in each catchment
+
 fun<-function(n){
   #Identify catchment of interest
   catchment.shp<-catchments.shp[n,]
@@ -138,6 +139,9 @@ fun<-function(n){
   #Export count
   tibble(FEATUREID = catchment.shp$FEATUREID, n.wetlands = length(giw.shp))
 }
+
+#Add featureID collumn to comply with fun 
+catchments.shp$FEATUREID<-seq(1,length(catchments.shp))
 
 #Execute function and merge with catchments
 count<-lapply(seq(1, length(catchments.shp)), fun) %>% bind_rows()
