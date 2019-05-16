@@ -121,5 +121,5 @@ boxplots<-df %>%
 
 #Plot and save~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 grid.arrange(waterLevel,boxplots,nrow=1, top="Catchment Scale")
-ggsave(paste0(results_dir, "Output/wetland_scale.png"), 
+ggsave(paste0(results_dir, "Output/catchment_scale.png"), 
        device = "png",width = 7, height=8, units="in")
