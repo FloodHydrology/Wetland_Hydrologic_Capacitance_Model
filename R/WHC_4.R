@@ -393,7 +393,7 @@ wetland.hydrology<-function(giw.INFO, land.INFO, lumped.INFO, snowmelt.VAR, prec
       #Estimate relevant fluxes
       R.VAR[day,"land"]    <<- precip.VAR[day]
       ET_wt.VAR[day,"land"]<<- pet.VAR[day]* exp(y_sat.VAR[day,"land"]/abs(land.INFO[,"RD"]))
-      exfil.VAR[day,"land"]<<- ifelse(y_sat.VAR[day,"land"] == 0, 
+      exfil.VAR[day,"land"]<<- ifelse(y_sat.VAR[day,"land"] == 0,
                                       0,
                                       pet.VAR[day]*(1 - exp(y_sat.VAR[day,"land"]/abs(land.INFO[,"RD"]))))
       
